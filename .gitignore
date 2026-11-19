@@ -6,3 +6,8 @@ venv/
 .env
 .pytest_cache/
 *.log
+*.tex
+*.aux
+*.out
+*.toc
+*.synctex.gz
