@@ -572,64 +572,80 @@
       let baseRightEyeRot = new THREE.Euler();
 
       const statusEl = document.getElementById("status-msg");
-      if (!IS_FILE_MODE) statusEl.textContent = "Caricamento modello umano 3D...";
+      statusEl.textContent = "Caricamento modello umano 3D...";
 
       const loader = new GLTFLoader();
-      loader.load(
+      const AVATAR_URLS = [
         "/avatar.glb",
-        (gltf) => {
-          const model = gltf.scene;
-          avatarRoot.add(model);
+        "https://raw.githubusercontent.com/Step0491/Social-Robotics-Emotional-Robot/main/web/avatar.glb",
+      ];
 
-          model.traverse((obj) => {
-            // Hide glasses so eyes, eyelids, and eyebrows are 100% visible & expressive
-            if (obj.isMesh && /glasses/i.test(obj.name)) {
-              obj.visible = false;
-              return;
-            }
+      function onAvatarLoaded(gltf) {
+        const model = gltf.scene;
+        avatarRoot.add(model);
 
-            if (obj.isMesh) {
-              obj.frustumCulled = false;
-              if (obj.material) {
-                obj.material.envMapIntensity = /eye/i.test(obj.name) ? 1.25 : 0.72;
-              }
-              if (obj.morphTargetDictionary && obj.morphTargetInfluences) {
-                morphMeshes.push(obj);
-              }
-            }
-
-            if (obj.isBone) {
-              if (obj.name === "Head") headBone = obj;
-              else if (obj.name === "Neck") neckBone = obj;
-              else if (obj.name === "Spine2") spineBone = obj;
-              else if (obj.name === "LeftEye") leftEyeBone = obj;
-              else if (obj.name === "RightEye") rightEyeBone = obj;
-            }
-          });
-
-          model.updateMatrixWorld(true);
-
-          if (headBone) {
-            baseHeadRot.copy(headBone.rotation);
-            const headPos = new THREE.Vector3();
-            headBone.getWorldPosition(headPos);
-            // Frame a crisp head-and-shoulders human portrait centered on the eyes/face
-            camera.position.set(headPos.x, headPos.y + 0.075, headPos.z + 0.68);
-            camera.lookAt(headPos.x, headPos.y + 0.055, headPos.z);
+        model.traverse((obj) => {
+          // Hide glasses so eyes, eyelids, and eyebrows are 100% visible & expressive
+          if (obj.isMesh && /glasses/i.test(obj.name)) {
+            obj.visible = false;
+            return;
           }
-          if (neckBone) baseNeckRot.copy(neckBone.rotation);
-          if (spineBone) baseSpineRot.copy(spineBone.rotation);
-          if (leftEyeBone) baseLeftEyeRot.copy(leftEyeBone.rotation);
-          if (rightEyeBone) baseRightEyeRot.copy(rightEyeBone.rotation);
 
-          if (!IS_FILE_MODE) statusEl.textContent = "Pronto";
-        },
-        undefined,
-        (err) => {
-          console.error("Failed to load /avatar.glb:", err);
-          statusEl.textContent = "Avvia python web_app.py per caricare il modello 3D umano.";
+          if (obj.isMesh) {
+            obj.frustumCulled = false;
+            if (obj.material) {
+              obj.material.envMapIntensity = /eye/i.test(obj.name) ? 1.25 : 0.72;
+            }
+            if (obj.morphTargetDictionary && obj.morphTargetInfluences) {
+              morphMeshes.push(obj);
+            }
+          }
+
+          if (obj.isBone) {
+            if (obj.name === "Head") headBone = obj;
+            else if (obj.name === "Neck") neckBone = obj;
+            else if (obj.name === "Spine2") spineBone = obj;
+            else if (obj.name === "LeftEye") leftEyeBone = obj;
+            else if (obj.name === "RightEye") rightEyeBone = obj;
+          }
+        });
+
+        model.updateMatrixWorld(true);
+
+        if (headBone) {
+          baseHeadRot.copy(headBone.rotation);
+          const headPos = new THREE.Vector3();
+          headBone.getWorldPosition(headPos);
+          // Frame a crisp head-and-shoulders human portrait with headroom above hair
+          camera.position.set(headPos.x, headPos.y + 0.065, headPos.z + 0.80);
+          camera.lookAt(headPos.x, headPos.y + 0.050, headPos.z);
         }
-      );
+        if (neckBone) baseNeckRot.copy(neckBone.rotation);
+        if (spineBone) baseSpineRot.copy(spineBone.rotation);
+        if (leftEyeBone) baseLeftEyeRot.copy(leftEyeBone.rotation);
+        if (rightEyeBone) baseRightEyeRot.copy(rightEyeBone.rotation);
+
+        statusEl.textContent = "Pronto";
+      }
+
+      function loadAvatarAt(index) {
+        if (index >= AVATAR_URLS.length) {
+          statusEl.textContent = "Impossibile caricare avatar.glb (riavvia python web_app.py).";
+          return;
+        }
+        const url = AVATAR_URLS[index];
+        // Skip local root-relative path when opened directly via file://
+        if (IS_FILE_MODE && url.startsWith("/")) {
+          loadAvatarAt(index + 1);
+          return;
+        }
+        loader.load(url, onAvatarLoaded, undefined, (err) => {
+          console.warn(`Avatar load failed from ${url}, trying fallback...`, err);
+          loadAvatarAt(index + 1);
+        });
+      }
+
+      loadAvatarAt(0);
 
       // Current interpolated morph values
       const currentMorphs = {};
