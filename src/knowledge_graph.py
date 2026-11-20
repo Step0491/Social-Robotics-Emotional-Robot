@@ -151,6 +151,19 @@ class RobotKnowledgeGraph:
                 behavior_name, context_name, RelationType.SUITABLE_FOR, weight=weight
             )
 
+        # Direct Event -> Behavior affinity boosts (disambiguates shared emotional states)
+        event_behavior_links = [
+            ("user_greeting", "warm_greeting", 0.35),
+            ("user_praise", "enthusiastic_acknowledgment", 0.35),
+            ("task_success", "enthusiastic_acknowledgment", 0.35),
+            ("user_criticism", "polite_apology", 0.25),
+            ("user_distress", "empathetic_listening", 0.25),
+        ]
+        for event_name, behavior_name, weight in event_behavior_links:
+            self._add_edge(
+                event_name, behavior_name, RelationType.SUGGESTS, weight=weight
+            )
+
     def _compute_intensity(
         self,
         new_emotion: str,
@@ -258,7 +271,18 @@ class RobotKnowledgeGraph:
                 ):
                     context_boost += float(ctx_data.get("weight", 0.0))
 
-            candidates[behavior_name] = round(base_weight + context_boost, 3)
+            # Boost score if the perceived event has a direct affinity for this behavior
+            event_boost = 0.0
+            for _, ev_beh_target, ev_data in self.graph.out_edges(event_name, data=True):
+                if (
+                    ev_data.get("relation") == RelationType.SUGGESTS.value
+                    and ev_beh_target == behavior_name
+                ):
+                    event_boost += float(ev_data.get("weight", 0.0))
+
+            candidates[behavior_name] = round(
+                base_weight + context_boost + event_boost, 3
+            )
 
         # Safe fallback if all emotion-linked behaviors were filtered out
         if not candidates:

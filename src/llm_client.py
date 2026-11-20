@@ -10,64 +10,31 @@ import requests
 from src.knowledge_graph import ReasoningResult
 
 
-ITALIAN_HINTS = (
-    "ciao",
-    "grazie",
-    "pioggia",
-    "annullat",
-    "partita",
-    "triste",
-    "ansia",
-    "stress",
-    "pericolo",
-    "aiuto",
-    "fuoco",
-    "fumo",
-    "bravo",
-    "ottimo",
-    "stupido",
-    "arrabbi",
-    "odio",
-    "deluso",
-    "male",
-    "bene",
-    "oggi",
-    "sono",
-    "non ",
-    "perché",
-    "perche",
-    "mia ",
-    "mio ",
-    "mamma",
-    "madre",
-    "padre",
-    "casa",
-    "cacciat",
-    "tagliat",
-    "cavi",
-    "rotto",
-    "spaccat",
-    "distrutt",
-    "ho ",
-    "ha ",
-    "preso",
-    "brutto",
-    "voto",
-    "esame",
-    "problema",
-    "famiglia",
-    "lavoro",
-    "paura",
-    "solo",
-    "sola",
-)
+ITALIAN_STOPWORDS = {
+    "ciao", "buongiorno", "buonasera", "salve", "grazie", "prego", "scusa",
+    "sono", "sei", "siamo", "ho", "hai", "ha", "abbiamo", "hanno",
+    "mi", "ti", "ci", "vi", "si", "che", "chi", "cosa", "come", "perche",
+    "perché", "oggi", "ieri", "domani", "ora", "adesso", "sempre", "mai",
+    "molto", "troppo", "male", "bene", "tutto", "niente", "nulla",
+    "casa", "mamma", "madre", "padre", "papa", "papà", "famiglia", "amico",
+    "amica", "lavoro", "esame", "voto", "partita", "pioggia", "cavi",
+    "non", "mia", "mio", "tuo", "tua", "suo", "sua", "con", "per", "una",
+    "uno", "del", "della", "dei", "delle", "nel", "nella", "sul", "sulla",
+    "preso", "perso", "fatto", "rotto", "cacciato", "tagliato", "annullata",
+    "triste", "felice", "contento", "contenta", "arrabbiato", "arrabbiata",
+    "paura", "ansia", "stress", "aiuto", "pericolo", "fumo", "fuoco",
+}
 
 
 def _looks_italian(text: Optional[str]) -> bool:
+    """Detect whether free text is likely written in Italian."""
     if not text:
         return False
     lower = text.lower()
-    return any(token in lower for token in ITALIAN_HINTS)
+    if any(ch in lower for ch in ("à", "è", "é", "ì", "ò", "ù")):
+        return True
+    tokens = set(re.findall(r"[a-zàèéìòù]+", lower))
+    return bool(tokens & ITALIAN_STOPWORDS)
 
 
 class OllamaClient:
@@ -244,16 +211,23 @@ class OllamaClient:
             return None, "fallback"
 
         # Auto mode: online (if key present) -> offline Ollama -> fallback
+        online_error: Optional[str] = None
         if self._resolve_api_key() or any(
             os.environ.get(k) for k in ("GEMINI_API_KEY", "GROQ_API_KEY", "OPENAI_API_KEY")
         ):
             res = self._call_online(prompt)
             if res:
                 return res
+            online_error = self.last_error
 
         text = self._call_ollama(prompt)
         if text:
             return text, f"offline:{self.model}"
+
+        if online_error and self.last_error and online_error != self.last_error:
+            self.last_error = f"{online_error} | {self.last_error}"
+        elif online_error and not self.last_error:
+            self.last_error = online_error
 
         return None, "fallback"
 
@@ -264,13 +238,19 @@ class OllamaClient:
         valid_contexts: List[str],
     ) -> str:
         return (
-            "You classify a free-text event for a social robot ontology.\n"
+            "You classify a free-text social interaction event for a robot ontology.\n"
             f"Valid events: {valid_events}\n"
             f"Valid contexts: {valid_contexts}\n"
-            "Map disappointing external events (e.g. cancelled match, bad news, failure) "
-            "to 'task_failure' or 'user_distress'.\n"
-            "Map insults or aggression to 'user_hostility'.\n"
-            "Map danger/fire/smoke/emergencies to 'safety_alert'.\n"
+            "Classification guidelines:\n"
+            "- Personal/family crisis, grief, loneliness, fear, anxiety, being kicked out -> "
+            "'user_distress' in 'emotional_support'.\n"
+            "- Disappointing setbacks (cancelled match, failed exam, lost items, broken device) -> "
+            "'task_failure' in 'casual_conversation' or 'assistance'.\n"
+            "- Insults, aggression, theft, or sabotage -> 'user_hostility' in 'casual_conversation'.\n"
+            "- Criticism of the robot's performance -> 'user_criticism' in 'assistance'.\n"
+            "- Fire, smoke, injury, medical or physical hazard -> 'safety_alert' in 'emergency'.\n"
+            "- Achievements or solved tasks -> 'task_success' in 'assistance'.\n"
+            "- Praise/thanks -> 'user_praise'; greetings -> 'user_greeting'.\n"
             'Return ONLY valid JSON: {"event": "<event>", "context": "<context>"}.\n\n'
             f'Text: "{text}"\nJSON:'
         )
@@ -281,59 +261,141 @@ class OllamaClient:
         valid_events: List[str],
         valid_contexts: List[str],
     ) -> Tuple[str, str]:
-        """Rule-based IT/EN event extractor when no LLM is reachable."""
-        lower = text.lower().strip()
+        """Weighted IT/EN event and context extractor with negation handling."""
+        lower = re.sub(r"\s+", " ", text.lower().strip())
         if not lower:
             return "user_silence", "casual_conversation"
 
-        rules: List[Tuple[Tuple[str, ...], str, str]] = [
+        negated_positive = bool(
+            re.search(
+                r"\b(non|not|never|mai)\s+(sono\s+|va\s+|sta\s+|è\s+|is\s+|feel\s+)?"
+                r"(bene|felice|content[oa]|bravo|riuscito|funziona|happy|good|great|ok|well|solved)\b",
+                lower,
+            )
+        )
+
+        # Ordered semantic rules with weighted keyword/regex signals
+        rule_specs: List[Tuple[str, str, Tuple[str, ...], Tuple[str, ...]]] = [
             (
-                ("fuoco", "fumo", "incendio", "pericolo", "emergenza", "incidente", "ospedale", "sangue", "smoke", "fire", "danger", "emergency", "help!", "allarme"),
                 "safety_alert",
                 "emergency",
+                (
+                    r"\b(fuoco|fumo|incendio|pericolo|emergenza|incidente|ospedale|sangue|"
+                    r"terremoto|allagamento|sviene|svenuto|ambulan|118|112|smoke|fire|danger|"
+                    r"emergency|accident|bleeding|allarme)\b",
+                ),
+                ("aiuto!", "help!", "soccorso"),
             ),
             (
-                ("stupido", "idiota", "inutile", "odio", "vaff", "schifo", "arrabbi", "incazz", "furios", "rabbia", "nervos", "litigat", "tagliat", "spaccat", "distrutt", "rubat", "sequestrat", "tradit", "ingiust", "urlat", "insult", "stupid", "useless", "shut up", "hate", "angry", "furious", "destroyed", "stole", "cut my"),
                 "user_hostility",
                 "casual_conversation",
+                (
+                    r"\b(stupido|idiota|inutile|imbecille|deficiente|odio|schifo|vaff\w*|"
+                    r"arrabbiat\w*|incazz\w*|furios[oa]|rabbia|nervos[oa]|stupid|useless|"
+                    r"idiot|hate|angry|furious|shut up)\b",
+                ),
+                (
+                    "tagliat", "spaccat", "distrutt", "rubat", "sequestrat", "tradit",
+                    "urlat", "insult", "destroyed", "stole", "cut my",
+                ),
             ),
             (
-                ("annullat", "rimandat", "pioggia", "fallit", "perso", "rotto", "rovinat", "guast", "errore", "bug", "bocciat", "brutto voto", "brutto", "insuffic", "peccato", "multa", "ritardo", "cancelled", "canceled", "failed", "rain", "broken", "lost", "ruined", "bad grade", "failed exam"),
-                "task_failure",
-                "casual_conversation",
-            ),
-            (
-                ("triste", "ansia", "stress", "male", "piang", "solo", "sola", "stanco", "stanca", "preoccupat", "sopraffatt", "depress", "soffr", "paura", "cacciat", "abbandon", "sfratt", "senza casa", "disperat", "lasciat", "mollat", "lutto", "ferit", "sad", "anxious", "stressed", "overwhelmed", "depressed", "worried", "cry", "kicked out", "thrown out", "homeless", "heartbroken"),
                 "user_distress",
                 "emotional_support",
+                (
+                    r"\b(triste|tristezza|ansia|ansioso|ansiosa|stress|stressat\w*|male|"
+                    r"piang\w*|solo|sola|solitudine|stanc[oa]|preoccupat\w*|sopraffatt\w*|"
+                    r"depress\w*|soffr\w*|paura|terrore|disperat\w*|lutto|mort[oa]|"
+                    r"licenziat\w*|lasciat\w*|mollat\w*|litigat\w*|ferit[oa]|cacciat\w*|"
+                    r"abbandonat\w*|sfrattat\w*|sad|anxious|stressed|overwhelmed|depressed|"
+                    r"worried|lonely|cry|crying|kicked out|thrown out|homeless|heartbroken|grief)\b",
+                ),
+                (
+                    "non ce la faccio", "senza casa", "buttato fuori", "messo alla porta",
+                    "sta male", "sto malissimo", "mi sento vuoto", "mi manca",
+                ),
             ),
             (
-                ("critica", "sbagliato", "deluso", "lento", "pessimo", "wrong", "disappointed", "bad job"),
+                "task_failure",
+                "casual_conversation",
+                (
+                    r"\b(annullat\w*|rimandat\w*|pioggia|fallit\w*|perso|persa|rotto|rotta|"
+                    r"rovinat\w*|guast\w*|errore|bug|bocciat\w*|insuffic\w*|peccato|"
+                    r"multa|ritardo|sbagliat\w*|cancelled|canceled|failed|rain|broken|"
+                    r"lost|ruined|bad grade|failed exam)\b",
+                ),
+                ("brutto voto", "non funziona", "andata male", "andato male"),
+            ),
+            (
                 "user_criticism",
                 "assistance",
+                (
+                    r"\b(critica|deluso|delusa|lento|lenta|pessimo|pessima|incomprensibile|"
+                    r"wrong|disappointed|bad job)\b",
+                ),
+                ("non capisci", "hai sbagliato", "non mi aiuti", "non serve a niente"),
             ),
             (
-                ("bravo", "grazie", "grande", "fantastico", "ottimo", "perfetto", "complimenti", "adoro", "thanks", "thank you", "awesome", "great job", "amazing"),
                 "user_praise",
                 "casual_conversation",
+                (
+                    r"\b(bravo|brava|grazie|grande|fantastico|ottimo|perfetto|complimenti|"
+                    r"adoro|utilissimo|thanks|thank you|awesome|great job|amazing)\b",
+                ),
+                (),
             ),
             (
-                ("riuscito", "risolto", "vinto", "funziona", "fatto", "promosso", "laureat", "felice", "content", "30", "solved", "success", "worked", "won", "done", "happy"),
                 "task_success",
                 "assistance",
+                (
+                    r"\b(riuscito|riuscita|risolto|vinto|funziona|promosso|promossa|"
+                    r"laureat\w*|felice|content[oa]|solved|success|worked|won|happy)\b",
+                ),
+                ("ce l'ho fatta", "ho preso 30", "passato l'esame", "tutto bene"),
             ),
             (
-                ("ciao", "buongiorno", "buonasera", "salve", "ehi", "hello", "hi ", "hey", "good morning"),
                 "user_greeting",
                 "casual_conversation",
+                (
+                    r"\b(ciao|buongiorno|buonasera|buonanotte|salve|ehi|hello|hi|hey|"
+                    r"good morning|good evening)\b",
+                ),
+                ("come stai", "how are you"),
             ),
         ]
 
-        for keywords, event, context in rules:
-            if any(kw in lower for kw in keywords):
-                ev = event if event in valid_events else valid_events[0]
-                ctx = context if context in valid_contexts else valid_contexts[0]
-                return ev, ctx
+        best_event: Optional[str] = None
+        best_context: Optional[str] = None
+        best_score = 0
+
+        for event, context, regexes, substrings in rule_specs:
+            if negated_positive and event in {"user_praise", "task_success"}:
+                continue
+
+            score = 0
+            for pattern in regexes:
+                score += len(re.findall(pattern, lower)) * 2
+            for sub in substrings:
+                if sub in lower:
+                    score += 2
+
+            # Slight priority boost for safety/distress over generic greetings when mixed
+            if score > 0 and event in {"safety_alert", "user_distress"}:
+                score += 1
+
+            if score > best_score:
+                best_score = score
+                best_event = event
+                best_context = context
+
+        if best_event is None and negated_positive:
+            best_event = "user_distress"
+            best_context = "emotional_support"
+
+        if best_event is not None:
+            ev = best_event if best_event in valid_events else valid_events[0]
+            ctx = best_context if best_context in valid_contexts else valid_contexts[0]
+            return ev, ctx
 
         # Never default unknown text to a positive greeting; fall back to neutral pause
         neutral_ev = "user_silence" if "user_silence" in valid_events else valid_events[0]

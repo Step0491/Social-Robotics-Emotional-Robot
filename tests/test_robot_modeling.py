@@ -175,12 +175,26 @@ class TestOllamaClientAndAgent(unittest.TestCase):
 
     def test_free_text_kicked_out_of_home_triggers_empathy_in_italian(self) -> None:
         agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
-        turn = agent.process_free_text("mamma mi ha cacciato via di casa")
+        for phrase in ("mamma mi ha cacciato di casa", "mamma mi ha cacciato via di casa"):
+            agent.reset_state()
+            turn = agent.process_free_text(phrase)
+            self.assertEqual(turn.reasoning.event, "user_distress")
+            self.assertEqual(turn.reasoning.context, "emotional_support")
+            self.assertEqual(turn.reasoning.new_emotion, "empathy")
+            self.assertEqual(turn.reasoning.selected_behavior.name, "empathetic_listening")
+            self.assertIn("Capisco", turn.verbal_response)
+
+    def test_free_text_negated_positive_triggers_distress(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_free_text("non sono felice oggi")
         self.assertEqual(turn.reasoning.event, "user_distress")
-        self.assertEqual(turn.reasoning.context, "emotional_support")
         self.assertEqual(turn.reasoning.new_emotion, "empathy")
-        self.assertEqual(turn.reasoning.selected_behavior.name, "empathetic_listening")
-        self.assertIn("Capisco", turn.verbal_response)
+
+    def test_praise_in_casual_conversation_selects_acknowledgment(self) -> None:
+        kg = RobotKnowledgeGraph()
+        res = kg.reason("user_praise", "casual_conversation", RobotInternalState())
+        self.assertEqual(res.new_emotion, "joy")
+        self.assertEqual(res.selected_behavior.name, "enthusiastic_acknowledgment")
 
     @patch("src.llm_client.requests.post")
     def test_groq_http_error_records_last_error(self, mock_post: MagicMock) -> None:
