@@ -333,26 +333,6 @@
       </ul>
     </div>
 
-    <details>
-      <summary>Opzioni Contesto e Modello (Groq Online)</summary>
-      <div class="settings-grid">
-        <div class="field">
-          <label for="context-select">Contesto</label>
-          <select id="context-select">
-            <option value="auto">Auto</option>
-            <option value="casual_conversation">casual_conversation</option>
-            <option value="assistance">assistance</option>
-            <option value="emotional_support">emotional_support</option>
-            <option value="emergency">emergency</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="online-model">Modello Groq</label>
-          <input type="text" id="online-model" value="openai/gpt-oss-20b" />
-        </div>
-      </div>
-    </details>
-
     <div class="footer">
       <span class="footer-note" id="status-msg">Pronto</span>
       <button type="button" class="btn-ghost" id="reset-btn">Reset stato</button>
@@ -847,7 +827,7 @@
       return {
         mode: "online",
         online_provider: "groq",
-        online_model: document.getElementById("online-model").value || "openai/gpt-oss-20b",
+        online_model: "openai/gpt-oss-20b",
       };
     }
 
@@ -902,7 +882,7 @@
       const input = document.getElementById("free-text");
       const text = input.value.trim();
       if (!text) return;
-      sendInteraction({ text, context: document.getElementById("context-select").value });
+      sendInteraction({ text, context: "auto" });
       input.value = "";
     });
 
