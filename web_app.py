@@ -116,6 +116,20 @@ def make_handler(agent: RobotEmotionalAgent):
                 self.wfile.write(content)
                 return
 
+            if self.path == "/avatar.glb":
+                glb_path = WEB_DIR / "avatar.glb"
+                if not glb_path.is_file():
+                    self._send_json({"error": "avatar.glb not found"}, status=HTTPStatus.NOT_FOUND)
+                    return
+                content = glb_path.read_bytes()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "model/gltf-binary")
+                self.send_header("Cache-Control", "public, max-age=3600")
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+
             if self.path == "/api/state":
                 self._send_json(_serialize_state(agent))
                 return
