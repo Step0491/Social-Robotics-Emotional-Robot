@@ -45,6 +45,12 @@ ITALIAN_HINTS = (
     "rotto",
     "spaccat",
     "distrutt",
+    "ho ",
+    "preso",
+    "brutto",
+    "butto",
+    "voto",
+    "esame",
 )
 
 
@@ -228,7 +234,7 @@ class OllamaClient:
                 "casual_conversation",
             ),
             (
-                ("annullat", "rimandat", "pioggia", "fallit", "perso", "rotto", "rovinat", "guast", "errore", "bug", "bocciat", "peccato", "multa", "ritardo", "cancelled", "canceled", "failed", "rain", "broken", "lost", "ruined"),
+                ("annullat", "rimandat", "pioggia", "fallit", "perso", "rotto", "rovinat", "guast", "errore", "bug", "bocciat", "brutto voto", "butto voto", "brutto", "insuffic", "peccato", "multa", "ritardo", "cancelled", "canceled", "failed", "rain", "broken", "lost", "ruined", "bad grade", "failed exam"),
                 "task_failure",
                 "casual_conversation",
             ),

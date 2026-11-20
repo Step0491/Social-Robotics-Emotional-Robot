@@ -132,6 +132,12 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         turn = agent.process_free_text("oggi ho comprato una sedia")
         self.assertNotEqual(turn.reasoning.event, "user_greeting")
 
+    def test_free_text_bad_grade_triggers_sadness(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_free_text("ho preso un brutto voto")
+        self.assertEqual(turn.reasoning.event, "task_failure")
+        self.assertEqual(turn.reasoning.new_emotion, "sadness")
+
     @patch("src.llm_client.requests.post")
     def test_online_gemini_provider(self, mock_post: MagicMock) -> None:
         mock_response = MagicMock()
