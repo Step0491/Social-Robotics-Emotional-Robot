@@ -103,6 +103,42 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         self.assertEqual(agent.state.emotion, "calm")
         self.assertEqual(len(agent.state.history), 0)
 
+    def test_hostility_triggers_anger_with_red_visuals(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_interaction("user_hostility", "casual_conversation", "Sei inutile!")
+        self.assertEqual(turn.reasoning.new_emotion, "anger")
+        self.assertEqual(turn.reasoning.selected_behavior.name, "firm_boundary")
+        visuals = agent.ontology.get_emotion_visuals("anger")
+        self.assertEqual(visuals["expression"], "angry")
+        self.assertEqual(visuals["bg_primary"], "#dc2626")
+
+    def test_free_text_italian_event_extraction_fallback(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_free_text("partita annullata per pioggia")
+        self.assertEqual(turn.reasoning.event, "task_failure")
+        self.assertEqual(turn.reasoning.new_emotion, "sadness")
+        visuals = agent.ontology.get_emotion_visuals("sadness")
+        self.assertEqual(visuals["expression"], "sad")
+        self.assertEqual(visuals["bg_primary"], "#38bdf8")
+
+    @patch("src.llm_client.requests.post")
+    def test_online_gemini_provider(self, mock_post: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "candidates": [{"content": {"parts": [{"text": "Mi dispiace per la pioggia!"}]}}]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = OllamaClient(mode="online", online_provider="gemini", api_key="test-key")
+        agent = RobotEmotionalAgent(llm_client=client)
+        turn = agent.process_interaction(
+            "task_failure", "casual_conversation", "partita annullata per pioggia"
+        )
+        self.assertTrue(turn.used_ollama)
+        self.assertEqual(turn.llm_source, "online:gemini")
+        self.assertIn("pioggia", turn.verbal_response)
+
 
 if __name__ == "__main__":
     unittest.main()
