@@ -121,6 +121,17 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         self.assertEqual(visuals["expression"], "sad")
         self.assertEqual(visuals["bg_primary"], "#38bdf8")
 
+    def test_free_text_cut_cables_triggers_anger_not_greeting(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_free_text("mia madre mi ha tagliato i cavi della play station 5")
+        self.assertEqual(turn.reasoning.event, "user_hostility")
+        self.assertEqual(turn.reasoning.new_emotion, "anger")
+
+    def test_free_text_unknown_does_not_default_to_greeting(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_free_text("oggi ho comprato una sedia")
+        self.assertNotEqual(turn.reasoning.event, "user_greeting")
+
     @patch("src.llm_client.requests.post")
     def test_online_gemini_provider(self, mock_post: MagicMock) -> None:
         mock_response = MagicMock()

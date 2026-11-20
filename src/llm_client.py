@@ -36,6 +36,15 @@ ITALIAN_HINTS = (
     "non ",
     "perché",
     "perche",
+    "mia ",
+    "mio ",
+    "madre",
+    "padre",
+    "tagliat",
+    "cavi",
+    "rotto",
+    "spaccat",
+    "distrutt",
 )
 
 
@@ -209,22 +218,22 @@ class OllamaClient:
 
         rules: List[Tuple[Tuple[str, ...], str, str]] = [
             (
-                ("fuoco", "fumo", "incendio", "pericolo", "emergenza", "smoke", "fire", "danger", "emergency", "help!", "allarme"),
+                ("fuoco", "fumo", "incendio", "pericolo", "emergenza", "incidente", "ospedale", "sangue", "smoke", "fire", "danger", "emergency", "help!", "allarme"),
                 "safety_alert",
                 "emergency",
             ),
             (
-                ("stupido", "idiota", "inutile", "odio", "vaff", "schifo", "arrabbi", "insult", "stupid", "useless", "shut up", "hate"),
+                ("stupido", "idiota", "inutile", "odio", "vaff", "schifo", "arrabbi", "incazz", "furios", "rabbia", "nervos", "litigat", "tagliat", "spaccat", "distrutt", "rubat", "sequestrat", "tradit", "ingiust", "urlat", "insult", "stupid", "useless", "shut up", "hate", "angry", "furious", "destroyed", "stole", "cut my"),
                 "user_hostility",
                 "casual_conversation",
             ),
             (
-                ("annullat", "rimandat", "pioggia", "fallit", "perso", "rotto", "errore", "bug", "peccato", "cancelled", "canceled", "failed", "rain", "broken", "lost"),
+                ("annullat", "rimandat", "pioggia", "fallit", "perso", "rotto", "rovinat", "guast", "errore", "bug", "bocciat", "peccato", "multa", "ritardo", "cancelled", "canceled", "failed", "rain", "broken", "lost", "ruined"),
                 "task_failure",
                 "casual_conversation",
             ),
             (
-                ("triste", "ansia", "stress", "male", "piang", "solo", "stanco", "preoccupat", "sopraffatt", "sad", "anxious", "stressed", "overwhelmed", "depressed", "worried"),
+                ("triste", "ansia", "stress", "male", "piang", "solo", "stanco", "preoccupat", "sopraffatt", "depress", "soffr", "paura", "sad", "anxious", "stressed", "overwhelmed", "depressed", "worried", "cry"),
                 "user_distress",
                 "emotional_support",
             ),
@@ -234,12 +243,12 @@ class OllamaClient:
                 "assistance",
             ),
             (
-                ("bravo", "grazie", "grande", "fantastico", "ottimo", "perfetto", "thanks", "thank you", "awesome", "great job", "amazing"),
+                ("bravo", "grazie", "grande", "fantastico", "ottimo", "perfetto", "complimenti", "adoro", "thanks", "thank you", "awesome", "great job", "amazing"),
                 "user_praise",
                 "casual_conversation",
             ),
             (
-                ("riuscito", "risolto", "vinto", "funziona", "fatto", "promosso", "30", "solved", "success", "worked", "won", "done"),
+                ("riuscito", "risolto", "vinto", "funziona", "fatto", "promosso", "laureat", "felice", "content", "30", "solved", "success", "worked", "won", "done", "happy"),
                 "task_success",
                 "assistance",
             ),
@@ -256,9 +265,10 @@ class OllamaClient:
                 ctx = context if context in valid_contexts else valid_contexts[0]
                 return ev, ctx
 
-        return "user_greeting" if "user_greeting" in valid_events else valid_events[0], (
-            "casual_conversation" if "casual_conversation" in valid_contexts else valid_contexts[0]
-        )
+        # Never default unknown text to a positive greeting; fall back to neutral pause
+        neutral_ev = "user_silence" if "user_silence" in valid_events else valid_events[0]
+        neutral_ctx = "casual_conversation" if "casual_conversation" in valid_contexts else valid_contexts[0]
+        return neutral_ev, neutral_ctx
 
     def extract_event(
         self,
