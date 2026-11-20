@@ -2,11 +2,11 @@
 
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Optional
+from typing import Dict, List, Optional
 
 from src.knowledge_graph import ReasoningResult, RobotInternalState, RobotKnowledgeGraph
 from src.llm_client import OllamaClient
-from src.ontology import RobotOntology
+from src.ontology import IntensityLevel, RobotOntology
 
 
 @dataclass
@@ -93,3 +93,18 @@ class RobotEmotionalAgent:
     def reset_state(self) -> None:
         """Reset the robot's internal emotional state to baseline."""
         self.state = RobotInternalState()
+
+    def restore_history(self, history: List[Dict[str, str]]) -> None:
+        """Rebuild state and episodic history from serialized turns (for stateless deploys)."""
+        self.reset_state()
+        for item in history:
+            ev = str(item.get("event", "")).strip()
+            ctx = str(item.get("context", "")).strip()
+            if not ev or not ctx:
+                continue
+            try:
+                self.knowledge_graph.reason(ev, ctx, self.state)
+            except ValueError:
+                continue
+        if not self.state.history:
+            self.state.intensity = IntensityLevel.LOW

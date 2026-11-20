@@ -226,6 +226,19 @@ class TestRDFExporter(unittest.TestCase):
         self.assertIn("robo:episode_1 a robo:InteractionEpisode, owl:NamedIndividual ;", ttl)
         self.assertIn("robo:episode_2 a robo:InteractionEpisode, owl:NamedIndividual ;", ttl)
 
+    def test_restore_history_rebuilds_episodic_state(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        agent.restore_history(
+            [
+                {"event": "user_praise", "context": "casual_conversation", "emotion": "joy"},
+            ]
+        )
+        self.assertEqual(agent.state.emotion, "joy")
+        self.assertEqual(agent.state.intensity, IntensityLevel.MEDIUM)
+        turn = agent.process_interaction("task_success", "assistance")
+        self.assertEqual(turn.reasoning.intensity, IntensityLevel.HIGH)
+        self.assertEqual(len(agent.state.history), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

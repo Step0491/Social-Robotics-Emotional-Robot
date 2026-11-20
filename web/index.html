@@ -435,7 +435,7 @@
       <div class="trace-header">
         <div class="trace-label">Ragionamento del Knowledge Graph &amp; Log di Sistema</div>
         <div class="trace-actions">
-          <a class="btn-mini" href="/api/export-ttl" target="_blank" rel="noopener">Export OWL (.ttl)</a>
+          <button type="button" class="btn-mini" id="export-ttl-btn">Export OWL (.ttl)</button>
           <button type="button" class="btn-mini" id="copy-logs-btn">Copia log</button>
         </div>
       </div>
@@ -681,7 +681,7 @@
       const loader = new GLTFLoader();
       const AVATAR_URLS = [
         "/avatar.glb",
-        "https://raw.githubusercontent.com/Step0491/Social-Robotics-Emotional-Robot/main/web/avatar.glb",
+        "https://raw.githubusercontent.com/Step0491/Social-Robotics-Emotional-Robot/main/public/avatar.glb",
       ];
 
       function onAvatarLoaded(gltf) {
@@ -947,9 +947,11 @@
       }
     }
 
+    let sessionHistory = [];
+
     function getLLMConfig() {
       return {
-        mode: "online",
+        mode: "auto",
         online_provider: "groq",
         online_model: "openai/gpt-oss-20b",
       };
@@ -961,6 +963,9 @@
     }
 
     function updateTelemetry(data) {
+      if (Array.isArray(data.history)) {
+        sessionHistory = data.history;
+      }
       if (data.graph_stats) {
         document.getElementById("metric-graph").textContent =
           `KG: ${data.graph_stats.nodes} nodi · ${data.graph_stats.edges} archi`;
@@ -1091,7 +1096,13 @@
         const res = await fetch("/api/interact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, event, context, llm: getLLMConfig() }),
+          body: JSON.stringify({
+            text,
+            event,
+            context,
+            history: sessionHistory,
+            llm: getLLMConfig(),
+          }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -1130,6 +1141,29 @@
           context: btn.dataset.ctx || "auto",
         });
       });
+    });
+
+    document.getElementById("export-ttl-btn").addEventListener("click", async () => {
+      if (IS_FILE_MODE) return;
+      try {
+        const res = await fetch("/api/export-ttl", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ history: sessionHistory }),
+        });
+        const ttl = await res.text();
+        const blob = new Blob([ttl], { type: "text/turtle;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "robot_ontology.ttl";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (_) {
+        document.getElementById("status-msg").textContent = "Errore durante export OWL (.ttl)";
+      }
     });
 
     document.getElementById("copy-logs-btn").addEventListener("click", async () => {

@@ -23,7 +23,12 @@ The system separates **symbolic decision-making** (Ontology + Knowledge Graph) f
 ├── main.py                        # CLI and built-in demo runner
 ├── web_app.py                     # Local HTTP server + REST API + /avatar.glb
 ├── benchmark.py                   # Quantitative evaluation script (safe/constrained + NLP)
+├── vercel.json                    # Vercel serverless routing & static asset config
 ├── requirements.txt
+├── api/
+│   └── index.py                   # Vercel Python serverless handler
+├── public/
+│   └── avatar.glb                 # 3D rigged human avatar (66 morph targets)
 ├── docs/
 │   ├── project_proposal.pdf       # Title & Abstract proposal
 │   └── technical_documentation.pdf# Architecture & evaluation report
@@ -34,8 +39,7 @@ The system separates **symbolic decision-making** (Ontology + Knowledge Graph) f
 │   ├── rdf_exporter.py            # W3C Turtle (OWL/RDF) TBox + ABox serializer
 │   └── robot_agent.py             # End-to-end pipeline orchestrator & latency telemetry
 ├── web/
-│   ├── index.html                 # Three.js ARKit 3D renderer + System Log Console
-│   └── avatar.glb                 # 3D rigged human avatar (66 morph targets)
+│   └── index.html                 # Three.js ARKit 3D renderer + System Log Console
 └── tests/
     └── test_robot_modeling.py     # Unit test suite (unittest)
 ```
@@ -80,7 +84,13 @@ Open `http://127.0.0.1:8000` in a browser.
 - `GET /api/state` — current internal state, history, and graph statistics
 - `POST /api/interact` — submit free text or explicit `(event, context)`
 - `POST /api/reset` — reset emotional state and episodic memory
-- `GET /api/export-ttl` — download TBox + episodic ABox in Turtle (`.ttl`)
+- `POST /api/export-ttl` / `GET /api/export-ttl` — download TBox + episodic ABox in Turtle (`.ttl`)
+
+### Deploy on Vercel
+
+1. Import this GitHub repository in Vercel (`https://vercel.com/new`).
+2. Add the server-side environment variable `GROQ_API_KEY` in **Project Settings → Environment Variables**.
+3. Deploy: `/avatar.glb` is served from `public/` via Edge CDN, while `/` and `/api/*` run on `api/index.py` with client-synced episodic memory.
 
 ### CLI & Evaluation
 

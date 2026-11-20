@@ -13,7 +13,19 @@ from src.rdf_exporter import export_to_turtle
 from src.robot_agent import InteractionTurnResult, RobotEmotionalAgent
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
+PUBLIC_DIR = Path(__file__).resolve().parent / "public"
 ENV_PATH = Path(__file__).resolve().parent / ".env"
+
+
+def create_default_agent() -> RobotEmotionalAgent:
+    """Instantiate the default agent after loading local .env if present."""
+    _load_dotenv()
+    llm_client = OllamaClient(
+        mode="auto",
+        online_provider="groq",
+        online_model="openai/gpt-oss-20b",
+    )
+    return RobotEmotionalAgent(llm_client=llm_client)
 
 
 def _load_dotenv(path: Path = ENV_PATH) -> None:
@@ -140,6 +152,17 @@ def make_handler(agent: RobotEmotionalAgent):
             raw = self.rfile.read(length) if length > 0 else b"{}"
             return json.loads(raw.decode("utf-8"))
 
+        def _send_ttl(self) -> None:
+            ttl = export_to_turtle(agent.knowledge_graph, agent.state).encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/turtle; charset=utf-8")
+            self.send_header(
+                "Content-Disposition", 'attachment; filename="robot_ontology.ttl"'
+            )
+            self.send_header("Content-Length", str(len(ttl)))
+            self.end_headers()
+            self.wfile.write(ttl)
+
         def do_GET(self) -> None:  # noqa: N802
             if self.path in {"/", "/index.html"}:
                 html_path = WEB_DIR / "index.html"
@@ -153,7 +176,11 @@ def make_handler(agent: RobotEmotionalAgent):
                 return
 
             if self.path == "/avatar.glb":
-                glb_path = WEB_DIR / "avatar.glb"
+                glb_path = (
+                    PUBLIC_DIR / "avatar.glb"
+                    if (PUBLIC_DIR / "avatar.glb").is_file()
+                    else WEB_DIR / "avatar.glb"
+                )
                 if not glb_path.is_file():
                     self._send_json({"error": "avatar.glb not found"}, status=HTTPStatus.NOT_FOUND)
                     return
@@ -171,15 +198,7 @@ def make_handler(agent: RobotEmotionalAgent):
                 return
 
             if self.path == "/api/export-ttl":
-                ttl = export_to_turtle(agent.knowledge_graph, agent.state).encode("utf-8")
-                self.send_response(HTTPStatus.OK)
-                self.send_header("Content-Type", "text/turtle; charset=utf-8")
-                self.send_header(
-                    "Content-Disposition", 'attachment; filename="robot_ontology.ttl"'
-                )
-                self.send_header("Content-Length", str(len(ttl)))
-                self.end_headers()
-                self.wfile.write(ttl)
+                self._send_ttl()
                 return
 
             self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
@@ -196,8 +215,19 @@ def make_handler(agent: RobotEmotionalAgent):
                 self._send_json(_serialize_state(agent))
                 return
 
+            if self.path == "/api/export-ttl":
+                if isinstance(payload.get("history"), list):
+                    agent.restore_history(payload["history"])
+                self._send_ttl()
+                return
+
             if self.path == "/api/interact":
                 _apply_llm_config(agent, payload.get("llm", {}))
+                if isinstance(payload.get("history"), list) and len(payload["history"]) != len(
+                    agent.state.history
+                ):
+                    agent.restore_history(payload["history"])
+
                 text = str(payload.get("text", "")).strip()
                 event = str(payload.get("event", "")).strip()
                 context = str(payload.get("context", "auto")).strip()
@@ -236,18 +266,14 @@ def make_handler(agent: RobotEmotionalAgent):
 
 
 def main() -> None:
-    _load_dotenv()
+    default_port = int(os.environ.get("PORT", "8000"))
+    default_host = "0.0.0.0" if "PORT" in os.environ else "127.0.0.1"
     parser = argparse.ArgumentParser(description="3D Emotional Robot Web Simulator")
-    parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8000, help="Port number (default: 8000)")
+    parser.add_argument("--host", default=default_host, help="Host address")
+    parser.add_argument("--port", type=int, default=default_port, help="Port number")
     args = parser.parse_args()
 
-    llm_client = OllamaClient(
-        mode="auto",
-        online_provider="groq",
-        online_model="openai/gpt-oss-20b",
-    )
-    agent = RobotEmotionalAgent(llm_client=llm_client)
+    agent = create_default_agent()
     server = ThreadingHTTPServer((args.host, args.port), make_handler(agent))
     print(f"Robot 3D simulator running at http://{args.host}:{args.port}")
     try:
