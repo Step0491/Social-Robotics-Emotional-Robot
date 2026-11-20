@@ -1,5 +1,7 @@
 # Ontology-Based Robot Emotional Modeling
 
+**Live Demo (Vercel):** https://social-robotics-emotional-robot.vercel.app/
+
 Implementation of **Case Study 2** (*Ontology-Based Robot Emotional Modeling*) from *"An Ontology-Grounded Knowledge Graph Framework for Personalized and Explainable Emotional Support in Conversational Systems"* (Miccoli et al., IAxIA 2026).
 
 ## Architecture

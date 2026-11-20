@@ -163,6 +163,11 @@ def make_handler(agent: RobotEmotionalAgent):
             self.end_headers()
             self.wfile.write(ttl)
 
+        def do_HEAD(self) -> None:  # noqa: N802
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+
         def do_GET(self) -> None:  # noqa: N802
             if self.path in {"/", "/index.html"}:
                 html_path = WEB_DIR / "index.html"
