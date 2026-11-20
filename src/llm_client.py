@@ -88,6 +88,8 @@ class OllamaClient:
     def _resolve_api_key(self) -> Optional[str]:
         if self.api_key:
             return self.api_key.strip()
+        if self.online_provider == "groq":
+            return os.environ.get("GROQ_API_KEY")
         if self.online_provider == "gemini":
             return os.environ.get("GEMINI_API_KEY")
         return os.environ.get("OPENAI_API_KEY")
@@ -126,9 +128,15 @@ class OllamaClient:
         except (requests.RequestException, ValueError, KeyError, IndexError):
             return None
 
-    def _call_openai(self, prompt: str, api_key: str) -> Optional[str]:
-        model = self.online_model or "gpt-4o-mini"
-        url = f"{self.online_base_url}/chat/completions"
+    def _call_openai(
+        self,
+        prompt: str,
+        api_key: str,
+        base_url: Optional[str] = None,
+        default_model: str = "gpt-4o-mini",
+    ) -> Optional[str]:
+        model = self.online_model or default_model
+        url = f"{(base_url or self.online_base_url).rstrip('/')}/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -152,14 +160,38 @@ class OllamaClient:
         except (requests.RequestException, ValueError, KeyError, IndexError):
             return None
 
-    def _call_online(self, prompt: str) -> Optional[str]:
+    def _call_online(self, prompt: str) -> Optional[Tuple[str, str]]:
         api_key = self._resolve_api_key()
+        provider = self.online_provider
+
+        if not api_key and not self.api_key:
+            for env_name, env_provider in (
+                ("GEMINI_API_KEY", "gemini"),
+                ("GROQ_API_KEY", "groq"),
+                ("OPENAI_API_KEY", "openai"),
+            ):
+                val = os.environ.get(env_name)
+                if val:
+                    api_key = val.strip()
+                    provider = env_provider
+                    break
+
         if not api_key:
             self.last_error = "API key mancante per modalità online"
             return None
-        if self.online_provider == "openai":
-            return self._call_openai(prompt, api_key)
-        return self._call_gemini(prompt, api_key)
+        if provider == "groq":
+            text = self._call_openai(
+                prompt,
+                api_key,
+                base_url="https://api.groq.com/openai/v1",
+                default_model="llama-3.1-8b-instant",
+            )
+            return (text, "online:groq") if text else None
+        if provider == "openai":
+            text = self._call_openai(prompt, api_key)
+            return (text, "online:openai") if text else None
+        text = self._call_gemini(prompt, api_key)
+        return (text, "online:gemini") if text else None
 
     def _complete(self, prompt: str) -> Tuple[Optional[str], str]:
         """Run prompt through the selected backend(s), returning (text, source)."""
@@ -169,9 +201,9 @@ class OllamaClient:
             return None, "fallback"
 
         if mode == "online":
-            text = self._call_online(prompt)
-            if text:
-                return text, f"online:{self.online_provider}"
+            res = self._call_online(prompt)
+            if res:
+                return res
             return None, "fallback"
 
         if mode == "offline":
@@ -181,10 +213,12 @@ class OllamaClient:
             return None, "fallback"
 
         # Auto mode: online (if key present) -> offline Ollama -> fallback
-        if self._resolve_api_key():
-            text = self._call_online(prompt)
-            if text:
-                return text, f"online:{self.online_provider}"
+        if self._resolve_api_key() or any(
+            os.environ.get(k) for k in ("GEMINI_API_KEY", "GROQ_API_KEY", "OPENAI_API_KEY")
+        ):
+            res = self._call_online(prompt)
+            if res:
+                return res
 
         text = self._call_ollama(prompt)
         if text:

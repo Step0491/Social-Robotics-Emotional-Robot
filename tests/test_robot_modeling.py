@@ -156,6 +156,22 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         self.assertEqual(turn.llm_source, "online:gemini")
         self.assertIn("pioggia", turn.verbal_response)
 
+    @patch("src.llm_client.requests.post")
+    def test_online_groq_provider(self, mock_post: MagicMock) -> None:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "Capisco la tua frustrazione!"}}]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = OllamaClient(mode="online", online_provider="groq", api_key="gsk-test")
+        agent = RobotEmotionalAgent(llm_client=client)
+        turn = agent.process_interaction("user_hostility", "casual_conversation", "Che nervoso!")
+        self.assertTrue(turn.used_ollama)
+        self.assertEqual(turn.llm_source, "online:groq")
+        self.assertIn("frustrazione", turn.verbal_response)
+
 
 if __name__ == "__main__":
     unittest.main()
