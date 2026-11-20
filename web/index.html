@@ -334,7 +334,7 @@
     </div>
 
     <details>
-      <summary>Opzioni LLM e Contesto</summary>
+      <summary>Opzioni Contesto e Modello (Groq Online)</summary>
       <div class="settings-grid">
         <div class="field">
           <label for="context-select">Contesto</label>
@@ -347,37 +347,8 @@
           </select>
         </div>
         <div class="field">
-          <label for="llm-mode">Modalità LLM</label>
-          <select id="llm-mode">
-            <option value="auto">Auto</option>
-            <option value="offline">Offline (Ollama)</option>
-            <option value="online">Online (API)</option>
-            <option value="fallback">Solo Fallback</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="ollama-model">Modello Ollama</label>
-          <input type="text" id="ollama-model" value="qwen2.5:3b" />
-        </div>
-        <div class="field">
-          <label for="ollama-url">URL Ollama</label>
-          <input type="text" id="ollama-url" value="http://127.0.0.1:11434" />
-        </div>
-        <div class="field">
-          <label for="online-provider">Provider Online</label>
-          <select id="online-provider">
-            <option value="gemini">Google Gemini</option>
-            <option value="groq">Groq (Llama 3.1 veloce)</option>
-            <option value="openai">OpenAI Compatible</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="online-model">Modello Online</label>
-          <input type="text" id="online-model" placeholder="gemini-2.0-flash" />
-        </div>
-        <div class="field full">
-          <label for="api-key">API Key (solo in memoria)</label>
-          <input type="password" id="api-key" placeholder="Opzionale per modalità Online" />
+          <label for="online-model">Modello Groq</label>
+          <input type="text" id="online-model" value="openai/gpt-oss-20b" />
         </div>
       </div>
     </details>
@@ -921,12 +892,9 @@
 
     function getLLMConfig() {
       return {
-        mode: document.getElementById("llm-mode").value,
-        offline_model: document.getElementById("ollama-model").value,
-        ollama_url: document.getElementById("ollama-url").value,
-        online_provider: document.getElementById("online-provider").value,
-        online_model: document.getElementById("online-model").value,
-        api_key: document.getElementById("api-key").value,
+        mode: "online",
+        online_provider: "groq",
+        online_model: document.getElementById("online-model").value || "openai/gpt-oss-20b",
       };
     }
 

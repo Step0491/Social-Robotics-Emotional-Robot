@@ -2,14 +2,29 @@
 
 import argparse
 import json
+import os
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict
 
+from src.llm_client import OllamaClient
 from src.robot_agent import InteractionTurnResult, RobotEmotionalAgent
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+
+
+def _load_dotenv(path: Path = ENV_PATH) -> None:
+    """Load key=value pairs from .env into os.environ if not already set."""
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
 def _serialize_state(agent: RobotEmotionalAgent) -> Dict[str, Any]:
@@ -158,12 +173,18 @@ def make_handler(agent: RobotEmotionalAgent):
 
 
 def main() -> None:
+    _load_dotenv()
     parser = argparse.ArgumentParser(description="3D Emotional Robot Web Simulator")
     parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8000, help="Port number (default: 8000)")
     args = parser.parse_args()
 
-    agent = RobotEmotionalAgent()
+    llm_client = OllamaClient(
+        mode="online",
+        online_provider="groq",
+        online_model="openai/gpt-oss-20b",
+    )
+    agent = RobotEmotionalAgent(llm_client=llm_client)
     server = ThreadingHTTPServer((args.host, args.port), make_handler(agent))
     print(f"Robot 3D simulator running at http://{args.host}:{args.port}")
     try:

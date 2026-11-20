@@ -184,7 +184,7 @@ class OllamaClient:
                 prompt,
                 api_key,
                 base_url="https://api.groq.com/openai/v1",
-                default_model="llama-3.1-8b-instant",
+                default_model="openai/gpt-oss-20b",
             )
             return (text, "online:groq") if text else None
         if provider == "openai":
