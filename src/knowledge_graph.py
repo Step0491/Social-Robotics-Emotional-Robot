@@ -97,6 +97,8 @@ class RobotKnowledgeGraph:
             ("task_failure", "empathy", 0.5),
             ("safety_alert", "fear", 1.0),
             ("safety_alert", "surprise", 0.7),
+            ("user_hostility", "anger", 1.0),
+            ("user_hostility", "calm", 0.4),
         ]
         for event_name, emotion_name, weight in event_emotion_links:
             self._add_edge(event_name, emotion_name, RelationType.TRIGGERS, weight=weight)
@@ -120,6 +122,8 @@ class RobotKnowledgeGraph:
             ("fear", "calm_reassurance", 0.6),
             ("surprise", "urgent_safety_guidance", 0.8),
             ("surprise", "proactive_check_in", 0.7),
+            ("anger", "firm_boundary", 1.0),
+            ("anger", "calm_reassurance", 0.75),
         ]
         for emotion_name, behavior_name, weight in emotion_behavior_links:
             self._add_edge(
@@ -139,6 +143,8 @@ class RobotKnowledgeGraph:
             ("proactive_check_in", "assistance", 0.4),
             ("proactive_check_in", "casual_conversation", 0.2),
             ("urgent_safety_guidance", "emergency", 0.6),
+            ("firm_boundary", "casual_conversation", 0.4),
+            ("firm_boundary", "assistance", 0.3),
         ]
         for behavior_name, context_name, weight in suitable_links:
             self._add_edge(

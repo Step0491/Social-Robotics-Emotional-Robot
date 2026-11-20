@@ -142,6 +142,70 @@ class RobotOntology:
                 description="Baseline balanced internal state.",
                 opposite=None,
             ),
+            "anger": EmotionalStateSpec(
+                name="anger",
+                valence=Valence.NEGATIVE,
+                default_intensity=IntensityLevel.HIGH,
+                description="Defensive high-arousal state triggered by hostility or disrespect.",
+                opposite="empathy",
+            ),
+        }
+
+        self.emotion_visuals: Dict[str, Dict[str, str]] = {
+            "joy": {
+                "bg_primary": "#f59e0b",
+                "bg_secondary": "#5c3406",
+                "accent": "#fde047",
+                "expression": "happy",
+            },
+            "trust": {
+                "bg_primary": "#10b981",
+                "bg_secondary": "#064e3b",
+                "accent": "#6ee7b7",
+                "expression": "warm",
+            },
+            "empathy": {
+                "bg_primary": "#8b5cf6",
+                "bg_secondary": "#2e1065",
+                "accent": "#c4b5fd",
+                "expression": "empathetic",
+            },
+            "surprise": {
+                "bg_primary": "#06b6d4",
+                "bg_secondary": "#164e63",
+                "accent": "#67e8f9",
+                "expression": "surprised",
+            },
+            "anticipation": {
+                "bg_primary": "#f97316",
+                "bg_secondary": "#431407",
+                "accent": "#fdba74",
+                "expression": "curious",
+            },
+            "sadness": {
+                "bg_primary": "#38bdf8",
+                "bg_secondary": "#0c2d48",
+                "accent": "#93c5fd",
+                "expression": "sad",
+            },
+            "fear": {
+                "bg_primary": "#ef4444",
+                "bg_secondary": "#450a0a",
+                "accent": "#fca5a5",
+                "expression": "fearful",
+            },
+            "anger": {
+                "bg_primary": "#dc2626",
+                "bg_secondary": "#5a0b0b",
+                "accent": "#f87171",
+                "expression": "angry",
+            },
+            "calm": {
+                "bg_primary": "#14b8a6",
+                "bg_secondary": "#0f2937",
+                "accent": "#5eead4",
+                "expression": "neutral",
+            },
         }
 
         self.events: Dict[str, PerceivedEventSpec] = {
@@ -192,6 +256,12 @@ class RobotOntology:
                 category="safety",
                 impact_valence=Valence.NEGATIVE,
                 description="Potential hazard or urgent situation detected.",
+            ),
+            "user_hostility": PerceivedEventSpec(
+                name="user_hostility",
+                category="social",
+                impact_valence=Valence.NEGATIVE,
+                description="User uses insults, aggression, or hostile language.",
             ),
         }
 
@@ -268,6 +338,13 @@ class RobotOntology:
                 description="Deliver concise safety instructions immediately.",
                 restricted_contexts=frozenset({"casual_conversation"}),
             ),
+            "firm_boundary": RobotBehaviorSpec(
+                name="firm_boundary",
+                tone="firm, respectful, and composed",
+                gesture="raised_hand",
+                description="Set a respectful boundary while de-escalating hostility.",
+                restricted_contexts=frozenset({"emergency"}),
+            ),
         }
 
     def validate_emotion(self, emotion: str) -> EmotionalStateSpec:
@@ -307,3 +384,8 @@ class RobotOntology:
     def list_contexts(self) -> List[str]:
         """Return all valid interaction context names."""
         return sorted(self.contexts.keys())
+
+    def get_emotion_visuals(self, emotion: str) -> Dict[str, str]:
+        """Return visual color and expression profile for an emotion."""
+        self.validate_emotion(emotion)
+        return dict(self.emotion_visuals[emotion])
