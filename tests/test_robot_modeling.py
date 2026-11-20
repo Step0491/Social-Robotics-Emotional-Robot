@@ -8,6 +8,7 @@ import requests
 from src.knowledge_graph import RobotInternalState, RobotKnowledgeGraph
 from src.llm_client import OllamaClient
 from src.ontology import IntensityLevel, RobotOntology
+from src.rdf_exporter import export_to_turtle
 from src.robot_agent import RobotEmotionalAgent
 
 
@@ -171,6 +172,22 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         self.assertTrue(turn.used_ollama)
         self.assertEqual(turn.llm_source, "online:groq")
         self.assertIn("frustrazione", turn.verbal_response)
+
+
+class TestRDFExporter(unittest.TestCase):
+    def test_turtle_export_contains_tbox_and_episodic_abox(self) -> None:
+        agent = RobotEmotionalAgent()
+        agent.knowledge_graph.reason("user_greeting", "casual_conversation", agent.state)
+        agent.knowledge_graph.reason("user_distress", "emotional_support", agent.state)
+
+        ttl = export_to_turtle(agent.knowledge_graph, agent.state)
+        self.assertIn("robo:EmotionalOntology a owl:Ontology", ttl)
+        self.assertIn("robo:Emotion a owl:Class .", ttl)
+        self.assertIn("robo:user_greeting robo:triggers robo:joy .", ttl)
+        self.assertIn("robo:warm_greeting robo:contraindicatedIn robo:emergency .", ttl)
+        self.assertIn("robo:currentEmotion robo:empathy ;", ttl)
+        self.assertIn("robo:episode_1 a robo:InteractionEpisode, owl:NamedIndividual ;", ttl)
+        self.assertIn("robo:episode_2 a robo:InteractionEpisode, owl:NamedIndividual ;", ttl)
 
 
 if __name__ == "__main__":

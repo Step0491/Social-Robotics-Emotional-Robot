@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from src.llm_client import OllamaClient
+from src.rdf_exporter import export_to_turtle
 from src.robot_agent import InteractionTurnResult, RobotEmotionalAgent
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
@@ -117,6 +118,18 @@ def make_handler(agent: RobotEmotionalAgent):
 
             if self.path == "/api/state":
                 self._send_json(_serialize_state(agent))
+                return
+
+            if self.path == "/api/export-ttl":
+                ttl = export_to_turtle(agent.knowledge_graph, agent.state).encode("utf-8")
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/turtle; charset=utf-8")
+                self.send_header(
+                    "Content-Disposition", 'attachment; filename="robot_ontology.ttl"'
+                )
+                self.send_header("Content-Length", str(len(ttl)))
+                self.end_headers()
+                self.wfile.write(ttl)
                 return
 
             self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
