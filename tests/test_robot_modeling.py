@@ -173,6 +173,29 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         self.assertEqual(turn.llm_source, "online:groq")
         self.assertIn("frustrazione", turn.verbal_response)
 
+    def test_free_text_kicked_out_of_home_triggers_empathy_in_italian(self) -> None:
+        agent = RobotEmotionalAgent(llm_client=OllamaClient(mode="fallback"))
+        turn = agent.process_free_text("mamma mi ha cacciato via di casa")
+        self.assertEqual(turn.reasoning.event, "user_distress")
+        self.assertEqual(turn.reasoning.context, "emotional_support")
+        self.assertEqual(turn.reasoning.new_emotion, "empathy")
+        self.assertEqual(turn.reasoning.selected_behavior.name, "empathetic_listening")
+        self.assertIn("Capisco", turn.verbal_response)
+
+    @patch("src.llm_client.requests.post")
+    def test_groq_http_error_records_last_error(self, mock_post: MagicMock) -> None:
+        err_resp = MagicMock()
+        err_resp.status_code = 401
+        err_resp.json.return_value = {"error": {"message": "Invalid API Key"}}
+        http_err = requests.HTTPError("401 Client Error", response=err_resp)
+        mock_post.return_value.raise_for_status.side_effect = http_err
+
+        client = OllamaClient(mode="online", online_provider="groq", api_key="gsk-bad")
+        agent = RobotEmotionalAgent(llm_client=client)
+        turn = agent.process_interaction("user_greeting", "casual_conversation", "Ciao")
+        self.assertFalse(turn.used_ollama)
+        self.assertEqual(client.last_error, "HTTP 401: Invalid API Key")
+
 
 class TestRDFExporter(unittest.TestCase):
     def test_turtle_export_contains_tbox_and_episodic_abox(self) -> None:

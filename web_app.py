@@ -243,7 +243,7 @@ def main() -> None:
     args = parser.parse_args()
 
     llm_client = OllamaClient(
-        mode="online",
+        mode="auto",
         online_provider="groq",
         online_model="openai/gpt-oss-20b",
     )

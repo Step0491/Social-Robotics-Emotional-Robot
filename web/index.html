@@ -1051,8 +1051,11 @@
         .join(", ");
       addLine(
         "log-line",
-        `LLM provider: ${data.llm_source || "fallback"}${data.llm_error ? ` (warning: ${data.llm_error})` : ""} | Decision role: NONE (KG-only)`
+        `LLM provider: ${data.llm_source || "fallback"} | Decision role: NONE (KG-only)`
       );
+      if (data.llm_error) {
+        addLine("log-warn", `LLM warning: ${data.llm_error}`);
+      }
       if (data.behavior) {
         addLine(
           "log-line",
@@ -1130,7 +1133,15 @@
     });
 
     document.getElementById("copy-logs-btn").addEventListener("click", async () => {
-      const text = document.getElementById("log-window").innerText;
+      const entries = Array.from(document.querySelectorAll("#log-window .log-entry"));
+      const text = entries
+        .map((entry) =>
+          Array.from(entry.children)
+            .map((child) => child.textContent.trim())
+            .filter(Boolean)
+            .join("\n")
+        )
+        .join("\n\n");
       try {
         await navigator.clipboard.writeText(text);
         document.getElementById("status-msg").textContent = "Log copiati negli appunti";

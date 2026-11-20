@@ -38,18 +38,28 @@ ITALIAN_HINTS = (
     "perche",
     "mia ",
     "mio ",
+    "mamma",
     "madre",
     "padre",
+    "casa",
+    "cacciat",
     "tagliat",
     "cavi",
     "rotto",
     "spaccat",
     "distrutt",
     "ho ",
+    "ha ",
     "preso",
     "brutto",
     "voto",
     "esame",
+    "problema",
+    "famiglia",
+    "lavoro",
+    "paura",
+    "solo",
+    "sola",
 )
 
 
@@ -108,6 +118,19 @@ class OllamaClient:
             self.last_error = f"Ollama non raggiungibile ({exc.__class__.__name__})"
             return None
 
+    def _record_http_error(self, exc: requests.HTTPError) -> None:
+        """Extract provider status code and error message into last_error."""
+        detail = ""
+        if exc.response is not None:
+            try:
+                err_json = exc.response.json()
+                detail = str(err_json.get("error", {}).get("message", "")).strip()
+            except ValueError:
+                detail = exc.response.text[:120].strip()
+            self.last_error = f"HTTP {exc.response.status_code}: {detail or exc}"
+        else:
+            self.last_error = str(exc)
+
     def _call_gemini(self, prompt: str, api_key: str) -> Optional[str]:
         model = self.online_model or "gemini-2.0-flash"
         url = (
@@ -125,7 +148,11 @@ class OllamaClient:
             parts = candidates[0].get("content", {}).get("parts", [])
             text = "".join(str(p.get("text", "")) for p in parts).strip()
             return text or None
-        except (requests.RequestException, ValueError, KeyError, IndexError):
+        except requests.HTTPError as exc:
+            self._record_http_error(exc)
+            return None
+        except (requests.RequestException, ValueError, KeyError, IndexError) as exc:
+            self.last_error = f"Errore Gemini ({exc.__class__.__name__})"
             return None
 
     def _call_openai(
@@ -157,7 +184,11 @@ class OllamaClient:
                 return None
             text = str(choices[0].get("message", {}).get("content", "")).strip()
             return text or None
-        except (requests.RequestException, ValueError, KeyError, IndexError):
+        except requests.HTTPError as exc:
+            self._record_http_error(exc)
+            return None
+        except (requests.RequestException, ValueError, KeyError, IndexError) as exc:
+            self.last_error = f"Errore provider online ({exc.__class__.__name__})"
             return None
 
     def _call_online(self, prompt: str) -> Optional[Tuple[str, str]]:
@@ -272,7 +303,7 @@ class OllamaClient:
                 "casual_conversation",
             ),
             (
-                ("triste", "ansia", "stress", "male", "piang", "solo", "stanco", "preoccupat", "sopraffatt", "depress", "soffr", "paura", "sad", "anxious", "stressed", "overwhelmed", "depressed", "worried", "cry"),
+                ("triste", "ansia", "stress", "male", "piang", "solo", "sola", "stanco", "stanca", "preoccupat", "sopraffatt", "depress", "soffr", "paura", "cacciat", "abbandon", "sfratt", "senza casa", "disperat", "lasciat", "mollat", "lutto", "ferit", "sad", "anxious", "stressed", "overwhelmed", "depressed", "worried", "cry", "kicked out", "thrown out", "homeless", "heartbroken"),
                 "user_distress",
                 "emotional_support",
             ),
