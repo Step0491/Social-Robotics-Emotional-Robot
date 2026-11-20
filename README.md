@@ -17,16 +17,26 @@ The system models the internal emotional state of a social robot and selects app
 pip install -r requirements.txt
 ```
 
-Optional: start [Ollama](https://ollama.com/) locally and pull a model (default: `llama3.2`):
+Optional: start [Ollama](https://ollama.com/) locally and pull a lightweight offline model (default: `qwen2.5:3b`):
 
 ```bash
-ollama pull llama3.2
+ollama pull qwen2.5:3b
 ollama serve
 ```
 
+Online LLM providers (Google Gemini or OpenAI-compatible APIs) are also supported via environment variables (`GEMINI_API_KEY` / `OPENAI_API_KEY`) or directly from the web UI.
+
 ## Run
 
-Run the interactive simulation or demo scenarios:
+Run the **3D Web Simulator** (humanoid face, dynamic emotion backgrounds, free-text events, and Knowledge Graph trace):
+
+```bash
+python web_app.py
+```
+
+Then open `http://127.0.0.1:8000` in your browser.
+
+Or run the CLI simulation / demo scenarios:
 
 ```bash
 python main.py --demo

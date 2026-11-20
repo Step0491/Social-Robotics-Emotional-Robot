@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Emotional Robot — 3D KG Simulator</title>
+  <style>
+    :root {
+      --bg-primary: #14b8a6;
+      --bg-secondary: #0f2937;
+      --accent: #5eead4;
+      --panel-bg: rgba(15, 23, 42, 0.88);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: #0b1120;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+    }
+
+    @media (max-width: 960px) {
+      body { grid-template-columns: 1fr; }
+      .stage { min-height: 55vh; }
+    }
+
+    /* Left 3D Stage */
+    .stage {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 45%, var(--bg-primary) 0%, var(--bg-secondary) 60%, #090d16 100%);
+      transition: background 0.8s ease;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background: radial-gradient(circle at 50% 45%, var(--bg-primary), transparent 62%);
+      opacity: 0.45;
+      filter: blur(55px);
+      animation: pulseAura 4.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulseAura {
+      0%, 100% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(1.12); opacity: 0.65; }
+    }
+
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+      z-index: 2;
+    }
+
+    .hud-top {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      z-index: 5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .badge {
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .hud-bottom {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+    }
+
+    .emotion-card {
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px;
+      border-radius: 14px;
+      min-width: 240px;
+    }
+
+    .emotion-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .emotion-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .intensity-bar {
+      margin-top: 10px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+
+    .intensity-fill {
+      height: 100%;
+      width: 35%;
+      background: var(--accent);
+      transition: width 0.5s ease, background 0.5s ease;
+    }
+
+    /* Right Control Panel */
+    .panel {
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    h1 { font-size: 1.2rem; font-weight: 700; }
+    .subtitle { font-size: 0.84rem; color: var(--muted); margin-top: 3px; }
+
+    .section {
+      background: rgba(30, 41, 59, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .section-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: transform 0.1s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+      padding: 10px 16px;
+      white-space: nowrap;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.09);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.16); }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .response-box {
+      font-size: 0.96rem;
+      line-height: 1.5;
+      color: #f1f5f9;
+      min-height: 46px;
+    }
+
+    .trace-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+    }
+
+    .trace-list li {
+      background: rgba(15, 23, 42, 0.65);
+      border-left: 3px solid var(--accent);
+      padding: 6px 10px;
+      border-radius: 4px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    details summary {
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 600;
+      user-select: none;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin: 8px 0 4px;
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" id="stage">
+    <div class="hud-top">
+      <div class="badge"><span class="dot"></span> <span id="kg-stats">KG: --</span></div>
+      <div class="badge" id="llm-badge">LLM: fallback</div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="hud-bottom">
+      <div class="emotion-card">
+        <div class="emotion-title" id="emotion-label">CALM</div>
+        <div class="emotion-meta" id="behavior-label">Behavior: baseline | Gesture: neutral</div>
+        <div class="intensity-bar"><div class="intensity-fill" id="intensity-fill"></div></div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <div>
+      <h1>Ontology-Based Emotional Robot</h1>
+      <p class="subtitle">Scrivi un evento libero oppure seleziona uno scenario presettato.</p>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Evento Libero (Testo)</div>
+      <div class="input-row">
+        <input type="text" id="free-text" placeholder="Es: partita annullata per pioggia..." />
+        <button class="btn-primary" id="send-btn">Invia</button>
+      </div>
+      <div class="grid-2">
+        <div>
+          <label class="field-label" for="context-select">Contesto</label>
+          <select id="context-select">
+            <option value="auto">Auto (da evento)</option>
+            <option value="casual_conversation">casual_conversation</option>
+            <option value="assistance">assistance</option>
+            <option value="emotional_support">emotional_support</option>
+            <option value="emergency">emergency</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="llm-mode">Modalità LLM</label>
+          <select id="llm-mode">
+            <option value="auto">Auto (Online -> Offline -> Fallback)</option>
+            <option value="offline">Offline (Ollama locale)</option>
+            <option value="online">Online (Gemini / OpenAI)</option>
+            <option value="fallback">Fallback (istantaneo)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Eventi Presettati</div>
+      <div class="presets">
+        <button class="chip" data-text="Ciao! Buongiorno robot" data-event="user_greeting" data-ctx="casual_conversation">Saluto</button>
+        <button class="chip" data-text="Bravo, hai fatto un ottimo lavoro!" data-event="user_praise" data-ctx="casual_conversation">Complimento</button>
+        <button class="chip" data-text="Partita annullata per pioggia" data-event="" data-ctx="auto">Partita annullata</button>
+        <button class="chip" data-text="Mi sento molto triste e stressato oggi" data-event="user_distress" data-ctx="emotional_support">Tristezza / Stress</button>
+        <button class="chip" data-text="Sei inutile, mi fai arrabbiare!" data-event="user_hostility" data-ctx="casual_conversation">Rabbia / Insulto</button>
+        <button class="chip" data-text="Attenzione, c'è fumo vicino al laboratorio!" data-event="safety_alert" data-ctx="emergency">Allerta Sicurezza</button>
+        <button class="chip" data-text="Grazie, il task è riuscito!" data-event="task_success" data-ctx="assistance">Task Riuscito</button>
+        <button class="chip" data-text="..." data-event="user_silence" data-ctx="casual_conversation">Silenzio</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Risposta del Robot</div>
+      <div class="response-box" id="robot-response">
+        Pronto ad interagire. Scrivi un evento o premi un pulsante sopra.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Knowledge Graph Reasoning Trace</div>
+      <ul class="trace-list" id="trace-list">
+        <li>Stato iniziale: calm (intensity=low).</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <details>
+        <summary>Configurazione LLM (Offline Ollama / Online API)</summary>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="ollama-model">Modello Ollama</label>
+            <input type="text" id="ollama-model" value="qwen2.5:3b" />
+          </div>
+          <div>
+            <label class="field-label" for="ollama-url">URL Ollama</label>
+            <input type="text" id="ollama-url" value="http://localhost:11434" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label class="field-label" for="online-provider">Provider Online</label>
+            <select id="online-provider">
+              <option value="gemini">Google Gemini</option>
+              <option value="openai">OpenAI Compatible</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="online-model">Modello Online (opz.)</label>
+            <input type="text" id="online-model" placeholder="gemini-2.0-flash" />
+          </div>
+        </div>
+        <label class="field-label" for="api-key">API Key (solo in memoria, mai salvata)</label>
+        <input type="password" id="api-key" placeholder="Incolla chiave API se usi modalità Online" />
+      </details>
+    </div>
+
+    <div class="footer-actions">
+      <span class="subtitle" id="status-msg">Pronto</span>
+      <button class="btn-secondary" id="reset-btn">Reset Stato</button>
+    </div>
+  </aside>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script>
+    // Target expression parameters updated by the Knowledge Graph
+    const faceState = {
+      emotion: "calm",
+      expression: "neutral",
+      intensity: 0.35,
+      accentHex: "#5eead4",
+      bgPrimary: "#14b8a6",
+      bgSecondary: "#0f2937",
+      gesture: "neutral",
+      gestureTimer: 0,
+      mouseX: 0,
+      mouseY: 0,
+    };
+
+    const EXPRESSIONS = {
+      neutral:    { browY: 0.42, browTilt: 0.0,  eyeScaleY: 1.0,  mouthCurve: 0.05, mouthOpen: 0.02 },
+      happy:      { browY: 0.50, browTilt: -0.08, eyeScaleY: 0.85, mouthCurve: 0.38, mouthOpen: 0.08 },
+      warm:       { browY: 0.46, browTilt: -0.05, eyeScaleY: 0.92, mouthCurve: 0.25, mouthOpen: 0.04 },
+      empathetic: { browY: 0.48, browTilt: 0.18,  eyeScaleY: 0.90, mouthCurve: -0.10, mouthOpen: 0.03 },
+      sad:        { browY: 0.38, browTilt: 0.32,  eyeScaleY: 0.72, mouthCurve: -0.32, mouthOpen: 0.02 },
+      angry:      { browY: 0.30, browTilt: -0.42, eyeScaleY: 0.62, mouthCurve: -0.28, mouthOpen: 0.06 },
+      fearful:    { browY: 0.58, browTilt: 0.24,  eyeScaleY: 1.28, mouthCurve: -0.22, mouthOpen: 0.24 },
+      surprised:  { browY: 0.62, browTilt: 0.0,   eyeScaleY: 1.32, mouthCurve: 0.0,   mouthOpen: 0.28 },
+      curious:    { browY: 0.52, browTilt: 0.12,  eyeScaleY: 1.10, mouthCurve: 0.10,  mouthOpen: 0.04 },
+    };
+
+    const container = document.getElementById("canvas-container");
+
+    window.addEventListener("mousemove", (e) => {
+      faceState.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      faceState.mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    function initThreeFace() {
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        38,
+        container.clientWidth / Math.max(1, container.clientHeight),
+        0.1,
+        100
+      );
+      camera.position.set(0, 0.15, 5.2);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
+      keyLight.position.set(3, 4, 5);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.PointLight(0x5eead4, 2.4, 15);
+      rimLight.position.set(-2.8, 1.5, -1.5);
+      scene.add(rimLight);
+
+      const headGroup = new THREE.Group();
+      scene.add(headGroup);
+
+      // Humanoid ceramic-metallic shell
+      const skinMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        roughness: 0.32,
+        metalness: 0.18,
+      });
+      const darkMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.4,
+        metalness: 0.5,
+      });
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: 0x5eead4,
+        emissive: 0x5eead4,
+        emissiveIntensity: 0.9,
+        roughness: 0.2,
+      });
+
+      // Cranium + Jaw
+      const cranium = new THREE.Mesh(new THREE.SphereGeometry(1.12, 48, 48), skinMat);
+      cranium.scale.set(0.92, 1.06, 0.96);
+      cranium.position.y = 0.12;
+      headGroup.add(cranium);
+
+      const jaw = new THREE.Mesh(new THREE.SphereGeometry(0.82, 36, 36), skinMat);
+      jaw.scale.set(0.86, 0.92, 0.85);
+      jaw.position.set(0, -0.48, 0.14);
+      headGroup.add(jaw);
+
+      // Neck
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.44, 0.9, 28), darkMat);
+      neck.position.set(0, -1.45, -0.05);
+      headGroup.add(neck);
+
+      // Subtle ear pods
+      const earGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.16, 24);
+      earGeo.rotateZ(Math.PI / 2);
+      const leftEar = new THREE.Mesh(earGeo, darkMat);
+      leftEar.position.set(-1.05, 0.05, -0.05);
+      const rightEar = leftEar.clone();
+      rightEar.position.x = 1.05;
+      headGroup.add(leftEar, rightEar);
+
+      // Visor / Face plate subtle contour
+      const visor = new THREE.Mesh(new THREE.SphereGeometry(0.96, 40, 32), darkMat);
+      visor.scale.set(0.88, 0.72, 0.55);
+      visor.position.set(0, 0.08, 0.58);
+      headGroup.add(visor);
+
+      // Eyes
+      const eyeGeo = new THREE.SphereGeometry(0.16, 24, 24);
+      const leftEye = new THREE.Mesh(eyeGeo, accentMat);
+      leftEye.position.set(-0.36, 0.18, 1.03);
+      leftEye.scale.set(1.15, 1.0, 0.45);
+      const rightEye = leftEye.clone();
+      rightEye.position.x = 0.36;
+      headGroup.add(leftEye, rightEye);
+
+      // Eyebrows
+      const browGeo = new THREE.BoxGeometry(0.36, 0.065, 0.08);
+      const leftBrow = new THREE.Mesh(browGeo, accentMat);
+      leftBrow.position.set(-0.37, 0.44, 1.05);
+      const rightBrow = new THREE.Mesh(browGeo, accentMat);
+      rightBrow.position.set(0.37, 0.44, 1.05);
+      headGroup.add(leftBrow, rightBrow);
+
+      // Mouth (dynamic tube curve)
+      let mouthMesh = null;
+      function updateMouth(curveVal, openVal) {
+        if (mouthMesh) {
+          headGroup.remove(mouthMesh);
+          mouthMesh.geometry.dispose();
+        }
+        const points = [
+          new THREE.Vector3(-0.30, -0.34, 1.02),
+          new THREE.Vector3(-0.14, -0.34 - curveVal * 0.25, 1.08),
+          new THREE.Vector3(0.0,   -0.34 - curveVal * 0.32 - openVal * 0.12, 1.10),
+          new THREE.Vector3(0.14,  -0.34 - curveVal * 0.25, 1.08),
+          new THREE.Vector3(0.30,  -0.34, 1.02),
+        ];
+        const curve = new THREE.CatmullRomCurve3(points);
+        const radius = 0.032 + openVal * 0.09;
+        const geo = new THREE.TubeGeometry(curve, 20, radius, 12, false);
+        mouthMesh = new THREE.Mesh(geo, accentMat);
+        headGroup.add(mouthMesh);
+      }
+      updateMouth(0.05, 0.02);
+
+      // Smoothly interpolated current values
+      const cur = { ...EXPRESSIONS.neutral };
+      const targetColor = new THREE.Color(faceState.accentHex);
+      let blinkTimer = 0;
+      let lastMouthHash = "";
+
+      function onResize() {
+        const w = container.clientWidth;
+        const h = Math.max(1, container.clientHeight);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+      window.addEventListener("resize", onResize);
+
+      const clock = new THREE.Clock();
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+        const t = clock.elapsedTime;
+
+        const target = EXPRESSIONS[faceState.expression] || EXPRESSIONS.neutral;
+        const speed = 5.5 * dt;
+        cur.browY += (target.browY - cur.browY) * speed;
+        cur.browTilt += (target.browTilt - cur.browTilt) * speed;
+        cur.eyeScaleY += (target.eyeScaleY - cur.eyeScaleY) * speed;
+        cur.mouthCurve += (target.mouthCurve - cur.mouthCurve) * speed;
+        cur.mouthOpen += (target.mouthOpen - cur.mouthOpen) * speed;
+
+        // Color transition
+        targetColor.set(faceState.accentHex);
+        accentMat.color.lerp(targetColor, speed);
+        accentMat.emissive.lerp(targetColor, speed);
+        rimLight.color.lerp(targetColor, speed);
+
+        // Blinking
+        blinkTimer += dt;
+        let blinkFactor = 1.0;
+        if (blinkTimer > 3.6) {
+          const b = blinkTimer - 3.6;
+          if (b < 0.14) blinkFactor = Math.max(0.08, Math.abs(Math.cos((b / 0.14) * Math.PI)));
+          else blinkTimer = 0;
+        }
+
+        leftEye.scale.y = cur.eyeScaleY * blinkFactor;
+        rightEye.scale.y = cur.eyeScaleY * blinkFactor;
+
+        leftBrow.position.y = cur.browY;
+        rightBrow.position.y = cur.browY;
+        leftBrow.rotation.z = cur.browTilt;
+        rightBrow.rotation.z = -cur.browTilt;
+
+        const mouthHash = `${cur.mouthCurve.toFixed(2)}_${cur.mouthOpen.toFixed(2)}`;
+        if (mouthHash !== lastMouthHash) {
+          updateMouth(cur.mouthCurve, cur.mouthOpen);
+          lastMouthHash = mouthHash;
+        }
+
+        // Idle breathing + mouse look + gesture
+        let gX = 0, gY = 0, gZ = 0;
+        if (faceState.gestureTimer > 0) {
+          faceState.gestureTimer = Math.max(0, faceState.gestureTimer - dt);
+          const p = faceState.gestureTimer * Math.PI * 2;
+          if (faceState.gesture === "happy_nod") gX = Math.sin(p * 2) * 0.18;
+          else if (faceState.gesture === "raised_hand") gY = Math.sin(p * 2.5) * 0.22;
+          else if (faceState.gesture === "slight_bow") gX = 0.22 * Math.sin(p * 0.5);
+          else if (faceState.gesture === "gentle_head_tilt") gZ = 0.18;
+          else if (faceState.gesture === "alert_posture") gX = -0.10;
+        }
+
+        headGroup.position.y = Math.sin(t * 1.6) * 0.05;
+        headGroup.rotation.y += (faceState.mouseX * 0.28 + gY - headGroup.rotation.y) * 4 * dt;
+        headGroup.rotation.x += (-faceState.mouseY * 0.18 + gX - headGroup.rotation.x) * 4 * dt;
+        headGroup.rotation.z += (gZ - headGroup.rotation.z) * 4 * dt;
+
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    // Pure-Canvas offline fallback if CDN is unreachable
+    function initCanvasFallbackFace() {
+      const canvas = document.createElement("canvas");
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      container.appendChild(canvas);
+      const ctx = canvas.getContext("2d");
+
+      function draw() {
+        canvas.width = container.clientWidth;
+        canvas.height = Math.max(1, container.clientHeight);
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const r = Math.min(cx, cy) * 0.48;
+        const expr = EXPRESSIONS[faceState.expression] || EXPRESSIONS.neutral;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Head sphere shading
+        const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+        grad.addColorStop(0, "#f1f5f9");
+        grad.addColorStop(0.75, "#94a3b8");
+        grad.addColorStop(1, "#334155");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.85, r, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Visor
+        ctx.fillStyle = "#0f172a";
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - r * 0.04, r * 0.65, r * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = faceState.accentHex;
+        [-1, 1].forEach((side) => {
+          ctx.beginPath();
+          ctx.ellipse(cx + side * r * 0.28, cy - r * 0.06, r * 0.11, r * 0.09 * expr.eyeScaleY, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Eyebrow
+          ctx.save();
+          ctx.translate(cx + side * r * 0.28, cy - r * (0.05 + expr.browY * 0.55));
+          ctx.rotate(side * -expr.browTilt);
+          ctx.fillRect(-r * 0.14, -r * 0.025, r * 0.28, r * 0.05);
+          ctx.restore();
+        });
+
+        // Mouth
+        ctx.strokeStyle = faceState.accentHex;
+        ctx.lineWidth = Math.max(4, r * 0.045);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 0.24, cy + r * 0.24);
+        ctx.quadraticCurveTo(cx, cy + r * (0.24 + expr.mouthCurve * 0.45), cx + r * 0.24, cy + r * 0.24);
+        ctx.stroke();
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    if (typeof window.THREE !== "undefined") {
+      initThreeFace();
+    } else {
+      initCanvasFallbackFace();
+    }
+
+    function applyVisuals(data) {
+      const v = data.visuals;
+      document.documentElement.style.setProperty("--bg-primary", v.bg_primary);
+      document.documentElement.style.setProperty("--bg-secondary", v.bg_secondary);
+      document.documentElement.style.setProperty("--accent", v.accent);
+
+      faceState.emotion = data.emotion;
+      faceState.expression = v.expression;
+      faceState.accentHex = v.accent;
+      faceState.bgPrimary = v.bg_primary;
+      faceState.bgSecondary = v.bg_secondary;
+
+      const intensityMap = { low: "33%", medium: "66%", high: "100%" };
+      document.getElementById("emotion-label").textContent = data.emotion;
+      document.getElementById("intensity-fill").style.width = intensityMap[data.intensity] || "50%";
+
+      if (data.graph_stats) {
+        document.getElementById("kg-stats").textContent =
+          `KG: ${data.graph_stats.nodes} nodi · ${data.graph_stats.edges} archi`;
+      }
+
+      if (data.behavior) {
+        faceState.gesture = data.behavior.gesture;
+        faceState.gestureTimer = 1.4;
+        document.getElementById("behavior-label").textContent =
+          `Behavior: ${data.behavior.name} | Gesture: ${data.behavior.gesture}`;
+      } else {
+        document.getElementById("behavior-label").textContent =
+          "Behavior: baseline | Gesture: neutral";
+      }
+
+      if (data.llm_source) {
+        document.getElementById("llm-badge").textContent = `LLM: ${data.llm_source}`;
+      }
+    }
+
+    function getLLMConfig() {
+      return {
+        mode: document.getElementById("llm-mode").value,
+        offline_model: document.getElementById("ollama-model").value,
+        ollama_url: document.getElementById("ollama-url").value,
+        online_provider: document.getElementById("online-provider").value,
+        online_model: document.getElementById("online-model").value,
+        api_key: document.getElementById("api-key").value,
+      };
+    }
+
+    async function sendInteraction({ text = "", event = "", context = "auto" }) {
+      const statusEl = document.getElementById("status-msg");
+      statusEl.textContent = "Elaborazione...";
+      try {
+        const res = await fetch("/api/interact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, event, context, llm: getLLMConfig() }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = `Errore: ${data.error || "richiesta non valida"}`;
+          return;
+        }
+        applyVisuals(data);
+        document.getElementById("robot-response").textContent = data.verbal_response;
+
+        const traceList = document.getElementById("trace-list");
+        traceList.innerHTML = "";
+        if (data.extraction_source && data.extraction_source !== "direct") {
+          const li = document.createElement("li");
+          li.textContent = `Extraction (${data.extraction_source}): "${text}" -> event='${data.event}', context='${data.context}'.`;
+          traceList.appendChild(li);
+        }
+        (data.reasoning_trace || []).forEach((step) => {
+          const li = document.createElement("li");
+          li.textContent = step;
+          traceList.appendChild(li);
+        });
+        statusEl.textContent = `Aggiornato (${data.previous_emotion} -> ${data.emotion})`;
+      } catch (err) {
+        statusEl.textContent = "Errore di connessione al server locale.";
+      }
+    }
+
+    document.getElementById("send-btn").addEventListener("click", () => {
+      const input = document.getElementById("free-text");
+      const text = input.value.trim();
+      if (!text) return;
+      const context = document.getElementById("context-select").value;
+      sendInteraction({ text, context });
+      input.value = "";
+    });
+
+    document.getElementById("free-text").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("send-btn").click();
+    });
+
+    document.querySelectorAll(".chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        sendInteraction({
+          text: btn.dataset.text || "",
+          event: btn.dataset.event || "",
+          context: btn.dataset.ctx || "auto",
+        });
+      });
+    });
+
+    document.getElementById("reset-btn").addEventListener("click", async () => {
+      const res = await fetch("/api/reset", { method: "POST" });
+      const data = await res.json();
+      applyVisuals(data);
+      document.getElementById("robot-response").textContent = "Stato emotivo resettato a calm.";
+      document.getElementById("trace-list").innerHTML = "<li>Stato resettato: calm (intensity=low).</li>";
+      document.getElementById("status-msg").textContent = "Reset completato";
+    });
+
+    // Initial load
+    fetch("/api/state").then((r) => r.json()).then(applyVisuals);
+  </script>
+</body>
+</html>
