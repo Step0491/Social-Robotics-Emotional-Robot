@@ -113,6 +113,8 @@ def _serialize_turn(
         "episode_count": len(agent.state.history),
         "verbal_response": turn.verbal_response,
         "llm_source": turn.llm_source,
+        "llm_model": agent.llm_client.resolved_model or agent.llm_client.online_model,
+        "llm_model_notice": agent.llm_client.last_model_notice,
         "llm_error": agent.llm_client.last_error,
         "extraction_source": turn.extraction_source,
         "graph_stats": agent.knowledge_graph.stats(),

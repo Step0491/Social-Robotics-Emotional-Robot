@@ -1054,10 +1054,14 @@
         .slice(0, 6)
         .map(([k, v]) => `${k}:${v}`)
         .join(", ");
+      const modelTag = data.llm_model && data.llm_source !== "fallback" ? ` (${data.llm_model})` : "";
       addLine(
         "log-line",
-        `LLM provider: ${data.llm_source || "fallback"} | Decision role: NONE (KG-only)`
+        `LLM provider: ${data.llm_source || "fallback"}${modelTag} | Decision role: NONE (KG-only)`
       );
+      if (data.llm_model_notice) {
+        addLine("log-warn", `Auto-switch modello: ${data.llm_model_notice}`);
+      }
       if (data.llm_error) {
         addLine("log-warn", `LLM warning: ${data.llm_error}`);
       }

@@ -61,6 +61,18 @@ class OllamaClient:
         self.online_base_url = online_base_url.rstrip("/")
         self.last_source: str = "fallback"
         self.last_error: Optional[str] = None
+        self.resolved_model: Optional[str] = None
+        self.last_model_notice: Optional[str] = None
+
+    GROQ_PREFERRED_MODELS = (
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "openai/gpt-oss-120b",
+        "openai/gpt-oss-20b",
+        "qwen/qwen3-32b",
+        "gemma2-9b-it",
+    )
+    _NON_CHAT_MODEL_HINTS = ("whisper", "guard", "tts", "playai", "safeguard")
 
     def _resolve_api_key(self) -> Optional[str]:
         if self.api_key:
@@ -122,15 +134,70 @@ class OllamaClient:
             self.last_error = f"Errore Gemini ({exc.__class__.__name__})"
             return None
 
+    @staticmethod
+    def _is_model_deprecated_error(error_msg: Optional[str]) -> bool:
+        """Detect API errors indicating a deprecated, decommissioned, or missing model."""
+        if not error_msg:
+            return False
+        lower = error_msg.lower()
+        return any(
+            token in lower
+            for token in (
+                "decommissioned",
+                "deprecated",
+                "model_not_found",
+                "does not exist",
+                "not found",
+                "no longer supported",
+            )
+        )
+
+    def _discover_groq_replacement(
+        self, api_key: str, base_url: str, failed_model: str
+    ) -> Optional[str]:
+        """Query Groq /models to pick an active equivalent chat model."""
+        models_url = f"{base_url.rstrip('/')}/models"
+        headers = {"Authorization": f"Bearer {api_key}"}
+        available_ids: List[str] = []
+        try:
+            resp = requests.get(models_url, headers=headers, timeout=5.0)
+            resp.raise_for_status()
+            items = resp.json().get("data") or []
+            for item in items:
+                mid = str(item.get("id", "")).strip()
+                if not mid or mid == failed_model:
+                    continue
+                if item.get("active") is False:
+                    continue
+                lower_id = mid.lower()
+                if any(h in lower_id for h in self._NON_CHAT_MODEL_HINTS):
+                    continue
+                available_ids.append(mid)
+        except (requests.RequestException, ValueError, KeyError, AttributeError):
+            available_ids = []
+
+        if available_ids:
+            for preferred in self.GROQ_PREFERRED_MODELS:
+                if preferred in available_ids:
+                    return preferred
+            return available_ids[0]
+
+        for preferred in self.GROQ_PREFERRED_MODELS:
+            if preferred != failed_model:
+                return preferred
+        return None
+
     def _call_openai(
         self,
         prompt: str,
         api_key: str,
         base_url: Optional[str] = None,
         default_model: str = "gpt-4o-mini",
+        allow_model_retry: bool = True,
     ) -> Optional[str]:
         model = self.online_model or default_model
-        url = f"{(base_url or self.online_base_url).rstrip('/')}/chat/completions"
+        effective_base = (base_url or self.online_base_url).rstrip("/")
+        url = f"{effective_base}/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -150,9 +217,33 @@ class OllamaClient:
             if not choices:
                 return None
             text = str(choices[0].get("message", {}).get("content", "")).strip()
-            return text or None
+            if text:
+                self.resolved_model = model
+                return text
+            return None
         except requests.HTTPError as exc:
             self._record_http_error(exc)
+            if (
+                allow_model_retry
+                and "groq.com" in effective_base
+                and self._is_model_deprecated_error(self.last_error)
+            ):
+                replacement = self._discover_groq_replacement(
+                    api_key, effective_base, model
+                )
+                if replacement:
+                    self.online_model = replacement
+                    self.last_model_notice = (
+                        f"Model '{model}' deprecated/unavailable; switched to '{replacement}'"
+                    )
+                    self.last_error = None
+                    return self._call_openai(
+                        prompt,
+                        api_key,
+                        base_url=effective_base,
+                        default_model=replacement,
+                        allow_model_retry=False,
+                    )
             return None
         except (requests.RequestException, ValueError, KeyError, IndexError) as exc:
             self.last_error = f"Errore provider online ({exc.__class__.__name__})"
@@ -194,6 +285,7 @@ class OllamaClient:
     def _complete(self, prompt: str) -> Tuple[Optional[str], str]:
         """Run prompt through the selected backend(s), returning (text, source)."""
         self.last_error = None
+        self.last_model_notice = None
         mode = self.mode.lower()
         if mode == "fallback":
             return None, "fallback"

@@ -210,6 +210,52 @@ class TestOllamaClientAndAgent(unittest.TestCase):
         self.assertFalse(turn.used_ollama)
         self.assertEqual(client.last_error, "HTTP 401: Invalid API Key")
 
+    @patch("src.llm_client.requests.get")
+    @patch("src.llm_client.requests.post")
+    def test_groq_deprecated_model_auto_switches(
+        self, mock_post: MagicMock, mock_get: MagicMock
+    ) -> None:
+        dep_resp = MagicMock()
+        dep_resp.status_code = 400
+        dep_resp.json.return_value = {
+            "error": {"message": "The model `old-groq-model` has been decommissioned."}
+        }
+        dep_err = requests.HTTPError("400 Bad Request", response=dep_resp)
+
+        ok_post = MagicMock()
+        ok_post.raise_for_status.return_value = None
+        ok_post.json.return_value = {
+            "choices": [{"message": {"content": "Ciao! Sono qui per te."}}]
+        }
+
+        fail_post = MagicMock()
+        fail_post.raise_for_status.side_effect = dep_err
+        mock_post.side_effect = [fail_post, ok_post]
+
+        models_resp = MagicMock()
+        models_resp.raise_for_status.return_value = None
+        models_resp.json.return_value = {
+            "data": [
+                {"id": "whisper-large-v3", "active": True},
+                {"id": "llama-3.3-70b-versatile", "active": True},
+            ]
+        }
+        mock_get.return_value = models_resp
+
+        client = OllamaClient(
+            mode="online",
+            online_provider="groq",
+            online_model="old-groq-model",
+            api_key="gsk-test",
+        )
+        agent = RobotEmotionalAgent(llm_client=client)
+        turn = agent.process_interaction("user_greeting", "casual_conversation", "Ciao")
+        self.assertTrue(turn.used_ollama)
+        self.assertEqual(turn.llm_source, "online:groq")
+        self.assertEqual(client.online_model, "llama-3.3-70b-versatile")
+        self.assertEqual(client.resolved_model, "llama-3.3-70b-versatile")
+        self.assertIn("switched to 'llama-3.3-70b-versatile'", client.last_model_notice or "")
+
 
 class TestRDFExporter(unittest.TestCase):
     def test_turtle_export_contains_tbox_and_episodic_abox(self) -> None:
