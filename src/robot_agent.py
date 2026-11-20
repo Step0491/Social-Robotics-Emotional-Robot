@@ -1,6 +1,7 @@
 """End-to-end social robot agent combining ontology, KG reasoning, and LLMs."""
 
 from dataclasses import dataclass
+from time import perf_counter
 from typing import Optional
 
 from src.knowledge_graph import ReasoningResult, RobotInternalState, RobotKnowledgeGraph
@@ -17,6 +18,9 @@ class InteractionTurnResult:
     used_ollama: bool
     llm_source: str = "fallback"
     extraction_source: str = "direct"
+    extraction_ms: float = 0.0
+    kg_latency_ms: float = 0.0
+    llm_latency_ms: float = 0.0
 
 
 class RobotEmotionalAgent:
@@ -39,18 +43,28 @@ class RobotEmotionalAgent:
         context: str,
         user_utterance: Optional[str] = None,
         extraction_source: str = "direct",
+        extraction_ms: float = 0.0,
     ) -> InteractionTurnResult:
         """Process a perceived event and context to update emotion and respond."""
+        t0 = perf_counter()
         reasoning = self.knowledge_graph.reason(event, context, self.state)
+        kg_latency_ms = round((perf_counter() - t0) * 1000.0, 3)
+
+        t1 = perf_counter()
         verbal_response, used_llm = self.llm_client.generate_response(
             reasoning, user_utterance=user_utterance
         )
+        llm_latency_ms = round((perf_counter() - t1) * 1000.0, 3)
+
         return InteractionTurnResult(
             reasoning=reasoning,
             verbal_response=verbal_response,
             used_ollama=used_llm,
             llm_source=self.llm_client.last_source,
             extraction_source=extraction_source,
+            extraction_ms=round(extraction_ms, 3),
+            kg_latency_ms=kg_latency_ms,
+            llm_latency_ms=llm_latency_ms,
         )
 
     def process_free_text(
@@ -60,17 +74,20 @@ class RobotEmotionalAgent:
     ) -> InteractionTurnResult:
         """Extract event/context from free text and run graph reasoning."""
         preferred_ctx = context if context and context != "auto" else None
+        t0 = perf_counter()
         event, resolved_ctx, extraction_source = self.llm_client.extract_event(
             text=text,
             valid_events=self.ontology.list_events(),
             valid_contexts=self.ontology.list_contexts(),
             preferred_context=preferred_ctx,
         )
+        extraction_ms = (perf_counter() - t0) * 1000.0
         return self.process_interaction(
             event=event,
             context=resolved_ctx,
             user_utterance=text,
             extraction_source=extraction_source,
+            extraction_ms=extraction_ms,
         )
 
     def reset_state(self) -> None:

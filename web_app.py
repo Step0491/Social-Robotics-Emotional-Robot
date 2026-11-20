@@ -38,6 +38,7 @@ def _serialize_state(agent: RobotEmotionalAgent) -> Dict[str, Any]:
             {"event": ev, "context": ctx, "emotion": em}
             for ev, ctx, em in agent.state.history[-10:]
         ],
+        "episode_count": len(agent.state.history),
         "events": agent.ontology.list_events(),
         "contexts": agent.ontology.list_contexts(),
         "graph_stats": agent.knowledge_graph.stats(),
@@ -48,13 +49,26 @@ def _serialize_turn(
     agent: RobotEmotionalAgent, turn: InteractionTurnResult
 ) -> Dict[str, Any]:
     r = turn.reasoning
+    ev_spec = agent.ontology.validate_event(r.event)
+    ctx_spec = agent.ontology.validate_context(r.context)
+    em_spec = agent.ontology.validate_emotion(r.new_emotion)
+    visuals = agent.ontology.get_emotion_visuals(r.new_emotion)
+
+    kg_triples = [
+        f"({r.event}) --[triggers]--> ({r.new_emotion})",
+        f"({r.new_emotion}) --[suggests]--> ({r.selected_behavior.name})",
+        f"({r.selected_behavior.name}) --[suitable_for]--> ({r.context})",
+    ]
+    for ex_beh in r.excluded_behaviors:
+        kg_triples.append(f"({ex_beh}) --[contraindicated_in]--> ({r.context})")
+
     return {
         "event": r.event,
         "context": r.context,
         "previous_emotion": r.previous_emotion,
         "emotion": r.new_emotion,
         "intensity": r.intensity.value,
-        "visuals": agent.ontology.get_emotion_visuals(r.new_emotion),
+        "visuals": visuals,
         "behavior": {
             "name": r.selected_behavior.name,
             "tone": r.selected_behavior.tone,
@@ -64,6 +78,27 @@ def _serialize_turn(
         "candidate_scores": r.candidate_scores,
         "excluded_behaviors": r.excluded_behaviors,
         "reasoning_trace": r.reasoning_trace,
+        "kg_triples": kg_triples,
+        "ontology_validation": {
+            "event_category": ev_spec.category,
+            "event_valence": ev_spec.impact_valence.value,
+            "context_priority": ctx_spec.priority,
+            "emotion_valence": em_spec.valence.value,
+            "emotion_opposite": em_spec.opposite,
+        },
+        "timings": {
+            "extraction_ms": turn.extraction_ms,
+            "kg_latency_ms": turn.kg_latency_ms,
+            "llm_latency_ms": turn.llm_latency_ms,
+            "total_ms": round(
+                turn.extraction_ms + turn.kg_latency_ms + turn.llm_latency_ms, 3
+            ),
+        },
+        "history": [
+            {"event": ev, "context": ctx, "emotion": em}
+            for ev, ctx, em in agent.state.history[-10:]
+        ],
+        "episode_count": len(agent.state.history),
         "verbal_response": turn.verbal_response,
         "llm_source": turn.llm_source,
         "llm_error": agent.llm_client.last_error,

@@ -208,28 +208,133 @@
     .trace {
       display: flex;
       flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 260px;
+    }
+
+    .trace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
     .trace-label {
-      font-size: 0.78rem;
-      color: var(--muted);
+      font-size: 0.8rem;
+      color: var(--text);
       font-weight: 600;
+      letter-spacing: 0.01em;
     }
 
-    .trace-list {
-      list-style: none;
+    .trace-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .telemetry-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .metric-badge {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.72rem;
+      color: var(--accent);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .btn-mini {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .btn-mini:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .log-window {
+      background: #080d1a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.76rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      overflow-y: auto;
+      max-height: 360px;
+      min-height: 220px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      font-size: 0.83rem;
-      color: #cbd5e1;
+      gap: 12px;
     }
 
-    .trace-list li {
-      padding-left: 10px;
+    .log-entry {
       border-left: 2px solid var(--accent);
-      line-height: 1.4;
+      padding-left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-entry-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #f8fafc;
+      font-weight: 600;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      padding-bottom: 3px;
+      margin-bottom: 2px;
+    }
+
+    .log-time {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 0.72rem;
+    }
+
+    .log-stage {
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    .log-line {
+      color: #cbd5e1;
+      word-break: break-word;
+    }
+
+    .log-triple {
+      color: #93c5fd;
+    }
+
+    .log-warn {
+      color: #fbbf24;
+    }
+
+    .log-ok {
+      color: #6ee7b7;
+    }
+
+    .log-muted {
+      color: #64748b;
     }
 
     details {
@@ -327,10 +432,29 @@
     </div>
 
     <div class="trace">
-      <div class="trace-label">Ragionamento del Knowledge Graph</div>
-      <ul class="trace-list" id="trace-list">
-        <li>Stato iniziale: calm (low).</li>
-      </ul>
+      <div class="trace-header">
+        <div class="trace-label">Ragionamento del Knowledge Graph &amp; Log di Sistema</div>
+        <div class="trace-actions">
+          <a class="btn-mini" href="/api/export-ttl" target="_blank" rel="noopener">Export OWL (.ttl)</a>
+          <button type="button" class="btn-mini" id="copy-logs-btn">Copia log</button>
+        </div>
+      </div>
+      <div class="telemetry-bar">
+        <span class="metric-badge" id="metric-graph">KG: 28 nodi · 56 archi</span>
+        <span class="metric-badge" id="metric-latency">Query: -- ms</span>
+        <span class="metric-badge" id="metric-episodes">ABox Episodi: 0</span>
+      </div>
+      <div class="log-window" id="log-window">
+        <div class="log-entry">
+          <div class="log-entry-head">
+            <span>[SYSTEM INIT · BASELINE]</span>
+            <span class="log-time">boot</span>
+          </div>
+          <div class="log-stage">[TBox] Ontologia caricata · Stati, Eventi, Contesti, Comportamenti e Vincoli attivi</div>
+          <div class="log-line">Stato iniziale: calm (intensity=low, valence=neutral)</div>
+          <div class="log-muted">In attesa di un fatto o evento per avviare la pipeline Perception -> KG -> ARKit + LLM.</div>
+        </div>
+      </div>
     </div>
 
     <div class="footer">
@@ -836,6 +960,122 @@
       document.querySelectorAll(".chip").forEach((c) => (c.disabled = busy));
     }
 
+    function updateTelemetry(data) {
+      if (data.graph_stats) {
+        document.getElementById("metric-graph").textContent =
+          `KG: ${data.graph_stats.nodes} nodi · ${data.graph_stats.edges} archi`;
+      }
+      if (data.timings) {
+        document.getElementById("metric-latency").textContent =
+          `KG: ${data.timings.kg_latency_ms} ms · Tot: ${data.timings.total_ms} ms`;
+      }
+      const epCount = data.episode_count ?? (data.history ? data.history.length : 0);
+      document.getElementById("metric-episodes").textContent = `ABox Episodi: ${epCount}`;
+    }
+
+    function appendSystemLog(data, rawInputText) {
+      const logWindow = document.getElementById("log-window");
+      const now = new Date().toLocaleTimeString("it-IT", { hour12: false });
+      const epNum = data.episode_count ?? (data.history ? data.history.length : 1);
+      const ov = data.ontology_validation || {};
+      const timings = data.timings || {};
+
+      const entry = document.createElement("div");
+      entry.className = "log-entry";
+
+      const addLine = (cls, text) => {
+        const div = document.createElement("div");
+        div.className = cls;
+        div.textContent = text;
+        entry.appendChild(div);
+      };
+
+      const head = document.createElement("div");
+      head.className = "log-entry-head";
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = `[TURN #${epNum}] ${data.event} (${data.context})`;
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "log-time";
+      timeSpan.textContent = now;
+      head.appendChild(titleSpan);
+      head.appendChild(timeSpan);
+      entry.appendChild(head);
+
+      // Stage 1: Perception & Ontology Validation
+      addLine("log-stage", "1. PERCEPTION & ONTOLOGY VALIDATION (TBox)");
+      if (rawInputText) {
+        addLine("log-line", `Input: "${rawInputText}"`);
+      }
+      addLine(
+        "log-line",
+        `Extractor: ${data.extraction_source || "direct"} (${timings.extraction_ms ?? 0} ms) -> event="${data.event}" [cat=${ov.event_category || "-"}, valence=${ov.event_valence || "-"}], context="${data.context}" [prio=${ov.context_priority ?? "-"}]`
+      );
+
+      // Stage 2: Knowledge Graph Traversal & Why/Why-Not Explainability
+      addLine("log-stage", `2. KNOWLEDGE GRAPH REASONING (${timings.kg_latency_ms ?? 0} ms)`);
+      (data.kg_triples || []).forEach((tr) => {
+        addLine("log-triple", `Triple: ${tr}`);
+      });
+      addLine(
+        "log-ok",
+        `State transition: ${data.previous_emotion} -> ${data.emotion} (intensity=${data.intensity}, valence=${ov.emotion_valence || "-"}, opposite=${ov.emotion_opposite || "none"})`
+      );
+
+      const scores = Object.entries(data.candidate_scores || {})
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, sc]) => `${name}=${sc.toFixed(2)}${data.behavior && name === data.behavior.name ? " [SELECTED]" : ""}`)
+        .join(" | ");
+      if (scores) {
+        addLine("log-line", `Candidate scores: ${scores}`);
+      }
+
+      const excludedEntries = Object.entries(data.excluded_behaviors || {});
+      if (excludedEntries.length > 0) {
+        excludedEntries.forEach(([beh, reason]) => {
+          addLine("log-warn", `Why-Not excluded "${beh}": ${reason}`);
+        });
+      } else {
+        addLine("log-muted", "Why-Not constraints: 0 comportamenti esclusi nel contesto attivo.");
+      }
+
+      (data.reasoning_trace || []).forEach((step) => {
+        addLine("log-line", `Trace: ${step}`);
+      });
+
+      // Stage 3: Grounded LLM & 3D ARKit Mapping
+      addLine("log-stage", `3. GROUNDED LLM & 3D ARKIT ENGINE (${timings.llm_latency_ms ?? 0} ms)`);
+      const exprName = data.visuals ? data.visuals.expression : "neutral";
+      const activeBlendshapes = Object.entries(ARKIT_EXPRESSIONS[exprName] || {})
+        .slice(0, 6)
+        .map(([k, v]) => `${k}:${v}`)
+        .join(", ");
+      addLine(
+        "log-line",
+        `LLM provider: ${data.llm_source || "fallback"}${data.llm_error ? ` (warning: ${data.llm_error})` : ""} | Decision role: NONE (KG-only)`
+      );
+      if (data.behavior) {
+        addLine(
+          "log-line",
+          `Behavior: ${data.behavior.name} | Tone: "${data.behavior.tone}" | Gesture: ${data.behavior.gesture}`
+        );
+      }
+      addLine(
+        "log-line",
+        `3D Face mapping: expression="${exprName}" -> ARKit [${activeBlendshapes || "baseline"}]`
+      );
+
+      // Stage 4: Episodic Memory (ABox)
+      const histStr = (data.history || [])
+        .map((h, i) => `#${i + 1}:${h.event}->${h.emotion}`)
+        .join(" ; ");
+      if (histStr) {
+        addLine("log-muted", `ABox Episodic Memory (${epNum} total): ${histStr}`);
+      }
+
+      logWindow.appendChild(entry);
+      logWindow.scrollTop = logWindow.scrollHeight;
+    }
+
     async function sendInteraction({ text = "", event = "", context = "auto" }) {
       const statusEl = document.getElementById("status-msg");
       if (IS_FILE_MODE) {
@@ -856,20 +1096,9 @@
           return;
         }
         applyVisuals(data);
+        updateTelemetry(data);
+        appendSystemLog(data, text);
         document.getElementById("robot-response").textContent = data.verbal_response;
-
-        const traceList = document.getElementById("trace-list");
-        traceList.innerHTML = "";
-        if (data.extraction_source && data.extraction_source !== "direct") {
-          const li = document.createElement("li");
-          li.textContent = `Evento estratto (${data.extraction_source}): ${data.event} (${data.context})`;
-          traceList.appendChild(li);
-        }
-        (data.reasoning_trace || []).forEach((step) => {
-          const li = document.createElement("li");
-          li.textContent = step;
-          traceList.appendChild(li);
-        });
         statusEl.textContent = `${data.previous_emotion} → ${data.emotion}`;
       } catch (err) {
         statusEl.textContent = "Server non raggiungibile: avvia python web_app.py";
@@ -900,18 +1129,40 @@
       });
     });
 
+    document.getElementById("copy-logs-btn").addEventListener("click", async () => {
+      const text = document.getElementById("log-window").innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        document.getElementById("status-msg").textContent = "Log copiati negli appunti";
+      } catch (_) {
+        document.getElementById("status-msg").textContent = "Copia non supportata dal browser";
+      }
+    });
+
     document.getElementById("reset-btn").addEventListener("click", async () => {
       if (IS_FILE_MODE) return;
       const res = await fetch("/api/reset", { method: "POST" });
       const data = await res.json();
       applyVisuals(data);
+      updateTelemetry(data);
       document.getElementById("robot-response").textContent = "Stato emotivo resettato.";
-      document.getElementById("trace-list").innerHTML = "<li>Stato iniziale: calm (low).</li>";
+      document.getElementById("log-window").innerHTML = `
+        <div class="log-entry">
+          <div class="log-entry-head">
+            <span>[SYSTEM RESET · BASELINE]</span>
+            <span class="log-time">${new Date().toLocaleTimeString("it-IT", { hour12: false })}</span>
+          </div>
+          <div class="log-line">Stato emotivo e memoria episodica ABox azzerati: calm (low).</div>
+        </div>
+      `;
       document.getElementById("status-msg").textContent = "Reset completato";
     });
 
     if (!IS_FILE_MODE) {
-      fetch("/api/state").then((r) => r.json()).then(applyVisuals).catch(() => {});
+      fetch("/api/state").then((r) => r.json()).then((data) => {
+        applyVisuals(data);
+        updateTelemetry(data);
+      }).catch(() => {});
     }
   </script>
 </body>
