@@ -379,15 +379,15 @@
     };
 
     const EXPRESSIONS = {
-      neutral:    { browY: 0.42, browTilt: 0.0,   upperLid: 0.0,   lowerLid: 0.0,  mouthCurve: 0.05,  mouthOpen: 0.02 },
-      happy:      { browY: 0.50, browTilt: -0.08, upperLid: 0.04,  lowerLid: 0.30, mouthCurve: 0.38,  mouthOpen: 0.14 },
-      warm:       { browY: 0.46, browTilt: -0.05, upperLid: 0.04,  lowerLid: 0.16, mouthCurve: 0.25,  mouthOpen: 0.04 },
-      empathetic: { browY: 0.48, browTilt: 0.22,  upperLid: 0.14,  lowerLid: 0.06, mouthCurve: -0.10, mouthOpen: 0.02 },
-      sad:        { browY: 0.39, browTilt: 0.36,  upperLid: 0.30,  lowerLid: 0.05, mouthCurve: -0.32, mouthOpen: 0.02 },
-      angry:      { browY: 0.32, browTilt: -0.44, upperLid: 0.38,  lowerLid: 0.22, mouthCurve: -0.26, mouthOpen: 0.08 },
-      fearful:    { browY: 0.55, browTilt: 0.24,  upperLid: -0.18, lowerLid: -0.05, mouthCurve: -0.20, mouthOpen: 0.28 },
-      surprised:  { browY: 0.58, browTilt: 0.0,   upperLid: -0.20, lowerLid: -0.05, mouthCurve: 0.0,   mouthOpen: 0.30 },
-      curious:    { browY: 0.51, browTilt: 0.14,  upperLid: -0.04, lowerLid: 0.0,  mouthCurve: 0.10,  mouthOpen: 0.04 },
+      neutral:    { browY: 0.44, browTilt: 0.02,  browArch: 0.08, upperLid: 0.02,  lowerLid: 0.02, pupilScale: 1.00, mouthCurve: 0.14,  mouthOpen: 0.01, mouthWidth: 0.24, blush: 0.20 },
+      happy:      { browY: 0.52, browTilt: -0.06, browArch: 0.14, upperLid: 0.00,  lowerLid: 0.42, pupilScale: 1.08, mouthCurve: 0.44,  mouthOpen: 0.18, mouthWidth: 0.30, blush: 0.38 },
+      warm:       { browY: 0.48, browTilt: -0.04, browArch: 0.11, upperLid: 0.04,  lowerLid: 0.24, pupilScale: 1.05, mouthCurve: 0.30,  mouthOpen: 0.04, mouthWidth: 0.27, blush: 0.32 },
+      empathetic: { browY: 0.49, browTilt: 0.26,  browArch: 0.13, upperLid: 0.16,  lowerLid: 0.10, pupilScale: 1.06, mouthCurve: -0.08, mouthOpen: 0.02, mouthWidth: 0.22, blush: 0.22 },
+      sad:        { browY: 0.41, browTilt: 0.42,  browArch: 0.04, upperLid: 0.32,  lowerLid: 0.08, pupilScale: 0.94, mouthCurve: -0.34, mouthOpen: 0.03, mouthWidth: 0.20, blush: 0.12 },
+      angry:      { browY: 0.34, browTilt: -0.46, browArch: 0.02, upperLid: 0.36,  lowerLid: 0.28, pupilScale: 0.84, mouthCurve: -0.28, mouthOpen: 0.12, mouthWidth: 0.25, blush: 0.42 },
+      fearful:    { browY: 0.57, browTilt: 0.28,  browArch: 0.16, upperLid: -0.22, lowerLid: -0.06, pupilScale: 0.78, mouthCurve: -0.22, mouthOpen: 0.30, mouthWidth: 0.22, blush: 0.10 },
+      surprised:  { browY: 0.59, browTilt: 0.00,  browArch: 0.18, upperLid: -0.24, lowerLid: -0.06, pupilScale: 0.86, mouthCurve: 0.00,  mouthOpen: 0.32, mouthWidth: 0.19, blush: 0.24 },
+      curious:    { browY: 0.51, browTilt: 0.14,  browArch: 0.15, upperLid: -0.04, lowerLid: 0.04, pupilScale: 1.04, mouthCurve: 0.12,  mouthOpen: 0.04, mouthWidth: 0.22, blush: 0.22 },
     };
 
     const container = document.getElementById("canvas-container");
@@ -397,50 +397,136 @@
       faceState.mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
-    // Sculpt a smooth, stylized Instagram / Meta 3D Avatar head mesh
+    // Procedural skin texture with soft rosy cheeks and subtle freckles (matching cartoon kid reference)
+    function createCartoonSkinTexture() {
+      const c = document.createElement("canvas");
+      c.width = 1024;
+      c.height = 512;
+      const ctx = c.getContext("2d");
+
+      // Soft warm fair skin base
+      ctx.fillStyle = "#f9d2c0";
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      // Subtle warm gradient on lower cheeks/nose area (center front is u = 0.5 => x = 512)
+      const leftCheek = ctx.createRadialGradient(448, 286, 6, 448, 286, 56);
+      leftCheek.addColorStop(0, "rgba(244, 134, 134, 0.36)");
+      leftCheek.addColorStop(1, "rgba(244, 134, 134, 0)");
+      ctx.fillStyle = leftCheek;
+      ctx.fillRect(380, 220, 140, 140);
+
+      const rightCheek = ctx.createRadialGradient(576, 286, 6, 576, 286, 56);
+      rightCheek.addColorStop(0, "rgba(244, 134, 134, 0.36)");
+      rightCheek.addColorStop(1, "rgba(244, 134, 134, 0)");
+      ctx.fillStyle = rightCheek;
+      ctx.fillRect(504, 220, 140, 140);
+
+      // Subtle nose bridge warmth
+      const noseGlow = ctx.createRadialGradient(512, 272, 4, 512, 272, 28);
+      noseGlow.addColorStop(0, "rgba(240, 146, 134, 0.22)");
+      noseGlow.addColorStop(1, "rgba(240, 146, 134, 0)");
+      ctx.fillStyle = noseGlow;
+      ctx.fillRect(480, 240, 64, 64);
+
+      // Soft cartoon freckles across cheeks and nose bridge
+      const freckles = [
+        [446, 276, 2.2], [458, 282, 1.9], [438, 286, 1.7], [468, 278, 1.6], [452, 291, 1.5],
+        [578, 276, 2.2], [566, 282, 1.9], [586, 286, 1.7], [556, 278, 1.6], [572, 291, 1.5],
+        [504, 272, 1.4], [520, 273, 1.4], [512, 268, 1.3],
+      ];
+      ctx.fillStyle = "rgba(186, 108, 86, 0.38)";
+      freckles.forEach(([fx, fy, fr]) => {
+        ctx.beginPath();
+        ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    // Procedural Pixar-style slate-blue/grey iris texture with limbal ring & radial fibers
+    function createCartoonIrisTexture() {
+      const c = document.createElement("canvas");
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext("2d");
+      const cx = 128, cy = 128, r = 122;
+
+      const grad = ctx.createRadialGradient(cx, cy, r * 0.25, cx, cy, r);
+      grad.addColorStop(0.0, "#8d98b2");
+      grad.addColorStop(0.55, "#6b748c");
+      grad.addColorStop(0.84, "#464d61");
+      grad.addColorStop(1.0, "#242836");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Subtle radial iris fibers
+      ctx.save();
+      ctx.translate(cx, cy);
+      for (let i = 0; i < 48; i++) {
+        const a = (i / 48) * Math.PI * 2;
+        ctx.strokeStyle = i % 2 === 0 ? "rgba(215, 224, 245, 0.18)" : "rgba(30, 35, 50, 0.18)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r * 0.32, Math.sin(a) * r * 0.32);
+        ctx.lineTo(Math.cos(a) * r * 0.88, Math.sin(a) * r * 0.88);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    // Sculpt the stylized cartoon kid head (high clean forehead, full soft cheeks, petite chin)
     function buildAvatarHeadGeometry() {
-      const geo = new THREE.SphereGeometry(1.06, 64, 64);
+      // phiStart = -PI/2 aligns u=0.5 directly with +Z (front of face)
+      const geo = new THREE.SphereGeometry(1.06, 64, 64, -Math.PI / 2, Math.PI * 2);
       const pos = geo.attributes.position;
       const v = new THREE.Vector3();
 
       for (let i = 0; i < pos.count; i++) {
         v.fromBufferAttribute(pos, i);
 
-        // Soft stylized avatar proportions (slightly fuller cranium, softer oval face)
-        v.y *= 1.12;
-        v.x *= 0.94;
-        v.z *= 0.96;
+        // Cartoon kid proportions: slightly wider & rounded upper face, shorter lower face
+        v.y *= 1.07;
+        v.x *= 0.98;
+        v.z *= 0.97;
 
-        // Gentle taper toward a soft rounded chin
-        if (v.y < 0) {
-          const t = Math.min(1, -v.y / 1.18);
+        // Taper lower jaw into a cute soft rounded chin
+        if (v.y < -0.05) {
+          const t = Math.min(1, (-v.y - 0.05) / 1.08);
           const smoothT = t * t * (3 - 2 * t);
-          v.x *= 1.0 - smoothT * 0.28;
+          v.x *= 1.0 - smoothT * 0.34;
           if (v.z > 0) {
-            v.z *= 1.0 - smoothT * 0.10;
-            // Soft rounded chin cushion
-            if (Math.abs(v.x) < 0.30 && v.y < -0.72) {
-              v.z += 0.05 * (1 - Math.abs(v.x) / 0.30);
+            v.z *= 1.0 - smoothT * 0.12;
+            if (Math.abs(v.x) < 0.28 && v.y < -0.70) {
+              v.z += 0.045 * (1 - Math.abs(v.x) / 0.28);
             }
           } else {
-            v.z *= 1.0 - smoothT * 0.24;
+            v.z *= 1.0 - smoothT * 0.28;
           }
         }
 
-        // Soft plump cheeks (signature Pixar / Instagram avatar silhouette)
-        if (v.y > -0.45 && v.y < 0.05 && v.z > 0.15) {
-          const cheekX = Math.exp(-Math.pow((Math.abs(v.x) - 0.56) / 0.28, 2));
-          const cheekY = Math.exp(-Math.pow((v.y + 0.18) / 0.24, 2));
-          const boost = cheekX * cheekY * 0.075;
-          v.x += Math.sign(v.x) * boost * 0.7;
-          v.z += boost;
+        // Full cute toddler/kid cheeks below the eyes
+        if (v.y > -0.50 && v.y < 0.02 && v.z > 0.12) {
+          const cheekX = Math.exp(-Math.pow((Math.abs(v.x) - 0.56) / 0.30, 2));
+          const cheekY = Math.exp(-Math.pow((v.y + 0.22) / 0.25, 2));
+          const boost = cheekX * cheekY * 0.095;
+          v.x += Math.sign(v.x) * boost * 0.78;
+          v.z += boost * 0.95;
         }
 
-        // Gentle smooth eye-socket indentation
-        if (v.y > -0.02 && v.y < 0.34 && v.z > 0.55) {
-          const eyeX = Math.exp(-Math.pow((Math.abs(v.x) - 0.36) / 0.18, 2));
-          const eyeY = Math.exp(-Math.pow((v.y - 0.14) / 0.14, 2));
-          v.z -= eyeX * eyeY * 0.085;
+        // Smooth wide eye sockets to seat large expressive cartoon eyes
+        if (v.y > -0.08 && v.y < 0.36 && v.z > 0.50) {
+          const eyeX = Math.exp(-Math.pow((Math.abs(v.x) - 0.38) / 0.21, 2));
+          const eyeY = Math.exp(-Math.pow((v.y - 0.11) / 0.17, 2));
+          v.z -= eyeX * eyeY * 0.11;
         }
 
         pos.setXYZ(i, v.x, v.y, v.z);
@@ -453,12 +539,12 @@
     function initThreeInstagramAvatar() {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
-        33,
+        32,
         container.clientWidth / Math.max(1, container.clientHeight),
         0.1,
         100
       );
-      camera.position.set(0, 0.06, 5.45);
+      camera.position.set(0, 0.10, 5.55);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -467,84 +553,94 @@
       renderer.toneMappingExposure = 1.08;
       container.appendChild(renderer.domElement);
 
-      // Soft warm studio lighting (Instagram / Meta 3D Avatar look)
-      scene.add(new THREE.HemisphereLight(0xfff9f5, 0x334155, 0.95));
+      // Soft Pixar-like 3-point studio lighting + emotional rim lights
+      scene.add(new THREE.HemisphereLight(0xfffaf5, 0x334155, 0.98));
 
-      const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.35);
-      keyLight.position.set(2.8, 4.2, 4.6);
+      const keyLight = new THREE.DirectionalLight(0xfff9f2, 1.32);
+      keyLight.position.set(2.5, 4.4, 4.8);
       scene.add(keyLight);
 
-      const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.55);
-      fillLight.position.set(-3.8, 1.2, 3.0);
+      const fillLight = new THREE.DirectionalLight(0xe0f2fe, 0.58);
+      fillLight.position.set(-3.8, 1.2, 3.2);
       scene.add(fillLight);
 
-      const rimLeft = new THREE.PointLight(0x5eead4, 2.6, 14);
-      rimLeft.position.set(-2.6, 1.4, -1.8);
+      const rimLeft = new THREE.PointLight(0x5eead4, 2.2, 14);
+      rimLeft.position.set(-2.6, 1.5, -1.9);
       scene.add(rimLeft);
 
-      const rimRight = new THREE.PointLight(0x5eead4, 2.0, 14);
-      rimRight.position.set(2.6, -0.2, -1.8);
+      const rimRight = new THREE.PointLight(0x5eead4, 1.8, 14);
+      rimRight.position.set(2.6, -0.2, -1.9);
       scene.add(rimRight);
 
       const headGroup = new THREE.Group();
       scene.add(headGroup);
 
-      // Soft peach skin material with subtle sheen
+      const skinTex = createCartoonSkinTexture();
+      const irisTex = createCartoonIrisTexture();
+
       const skinMat = new THREE.MeshPhysicalMaterial({
-        color: 0xf7c5ae,
-        roughness: 0.46,
+        map: skinTex,
+        roughness: 0.48,
         metalness: 0.0,
-        clearcoat: 0.06,
-        clearcoatRoughness: 0.5,
-        sheen: 0.35,
+        clearcoat: 0.04,
+        sheen: 0.38,
         sheenRoughness: 0.65,
+        sheenColor: new THREE.Color(0xffe6d8),
+      });
+
+      const skinPlainMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf8cdb9,
+        roughness: 0.48,
+        sheen: 0.32,
         sheenColor: new THREE.Color(0xffe4d6),
       });
 
+      const earInnerMat = new THREE.MeshStandardMaterial({
+        color: 0xeba998,
+        roughness: 0.58,
+      });
+
       const lidMat = new THREE.MeshPhysicalMaterial({
-        color: 0xeeb098,
-        roughness: 0.5,
-        metalness: 0.0,
+        color: 0xf0baa5,
+        roughness: 0.52,
         sheen: 0.25,
-        sheenColor: new THREE.Color(0xffd8c8),
+        sheenColor: new THREE.Color(0xffdfd0),
       });
 
       const noseTipMat = new THREE.MeshPhysicalMaterial({
-        color: 0xf4b6a0,
+        color: 0xf2ac9c,
         roughness: 0.42,
         clearcoat: 0.08,
       });
 
       const hairMat = new THREE.MeshPhysicalMaterial({
-        color: 0x2b1e1a,
-        roughness: 0.52,
-        metalness: 0.04,
-        sheen: 0.45,
-        sheenRoughness: 0.5,
-        sheenColor: new THREE.Color(0x5c4038),
+        color: 0x1b1b20,
+        roughness: 0.58,
+        metalness: 0.03,
+        sheen: 0.42,
+        sheenRoughness: 0.52,
+        sheenColor: new THREE.Color(0x4a4d5c),
       });
 
       const browMat = new THREE.MeshStandardMaterial({
-        color: 0x241916,
+        color: 0x18181c,
         roughness: 0.62,
       });
 
       const lipMat = new THREE.MeshPhysicalMaterial({
-        color: 0xd97373,
+        color: 0xde7a82,
         roughness: 0.34,
-        clearcoat: 0.22,
-        clearcoatRoughness: 0.3,
+        clearcoat: 0.18,
       });
 
-      const hoodieMat = new THREE.MeshStandardMaterial({
-        color: 0x334155,
-        roughness: 0.82,
-        metalness: 0.02,
+      // Signature Raglan T-shirt from reference (white chest + bright sky-blue sleeves/collar)
+      const shirtWhiteMat = new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        roughness: 0.72,
       });
-
-      const collarMat = new THREE.MeshStandardMaterial({
-        color: 0x475569,
-        roughness: 0.78,
+      const shirtBlueMat = new THREE.MeshStandardMaterial({
+        color: 0x29a3f2,
+        roughness: 0.68,
       });
 
       // Smooth sculpted head
@@ -552,261 +648,325 @@
       const headMesh = new THREE.Mesh(headGeo, skinMat);
       headGroup.add(headMesh);
 
-      // Soft cheek blush discs (dynamic opacity based on emotion)
+      // Extra dynamic emotional blush overlay (scales opacity with happiness/anger)
       const blushMat = new THREE.MeshBasicMaterial({
         color: 0xfb7185,
         transparent: true,
-        opacity: 0.14,
+        opacity: 0.16,
         depthWrite: false,
       });
-      const blushGeo = new THREE.CircleGeometry(0.18, 24);
+      const blushGeo = new THREE.CircleGeometry(0.20, 24);
       const leftBlush = new THREE.Mesh(blushGeo, blushMat);
-      leftBlush.position.set(-0.56, -0.15, 0.86);
-      leftBlush.rotation.y = -0.52;
+      leftBlush.position.set(-0.56, -0.22, 0.87);
+      leftBlush.rotation.y = -0.50;
       const rightBlush = new THREE.Mesh(blushGeo, blushMat);
-      rightBlush.position.set(0.56, -0.15, 0.86);
-      rightBlush.rotation.y = 0.52;
+      rightBlush.position.set(0.56, -0.22, 0.87);
+      rightBlush.rotation.y = 0.50;
       headGroup.add(leftBlush, rightBlush);
 
-      // Smooth neck & casual crewneck / hoodie shoulders
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.35, 0.72, 32), skinMat);
-      neck.position.set(0, -1.24, -0.05);
+      // Slender cartoon kid neck & Raglan T-shirt shoulders
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.25, 0.68, 32), skinPlainMat);
+      neck.position.set(0, -1.20, -0.04);
       headGroup.add(neck);
 
-      const collar = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.09, 16, 36), collarMat);
-      collar.rotation.x = Math.PI / 2 + 0.14;
-      collar.position.set(0, -1.48, -0.02);
-      headGroup.add(collar);
+      const torsoGroup = new THREE.Group();
+      torsoGroup.position.set(0, -1.52, -0.04);
 
-      const shoulders = new THREE.Mesh(
-        new THREE.SphereGeometry(1.18, 36, 24, 0, Math.PI * 2, 0, Math.PI * 0.55),
-        hoodieMat
+      const collarRing = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.055, 14, 32), shirtBlueMat);
+      collarRing.rotation.x = Math.PI / 2 + 0.16;
+      collarRing.position.set(0, 0.06, 0.02);
+      torsoGroup.add(collarRing);
+
+      // Blue raglan yoke/shoulders
+      const shoulderArc = new THREE.Mesh(
+        new THREE.SphereGeometry(0.92, 36, 24, 0, Math.PI * 2, 0, Math.PI * 0.58),
+        shirtBlueMat
       );
-      shoulders.scale.set(1.22, 0.72, 0.68);
-      shoulders.position.set(0, -2.26, -0.06);
-      headGroup.add(shoulders);
+      shoulderArc.scale.set(1.16, 0.78, 0.66);
+      shoulderArc.position.set(0, -0.54, 0);
+      torsoGroup.add(shoulderArc);
 
-      // Soft rounded stylized nose
+      // White front chest panel
+      const chestWhite = new THREE.Mesh(
+        new THREE.SphereGeometry(0.66, 32, 24),
+        shirtWhiteMat
+      );
+      chestWhite.scale.set(0.92, 0.96, 0.66);
+      chestWhite.position.set(0, -0.62, 0.22);
+      torsoGroup.add(chestWhite);
+
+      // Left and right blue short sleeves
+      [-1, 1].forEach((side) => {
+        const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.36, 12, 18), shirtBlueMat);
+        sleeve.position.set(side * 0.86, -0.36, -0.02);
+        sleeve.rotation.z = side * 0.42;
+        torsoGroup.add(sleeve);
+      });
+      headGroup.add(torsoGroup);
+
+      // Cute small button nose
       const noseGroup = new THREE.Group();
-      noseGroup.position.set(0, -0.11, 0.99);
-      const noseBridge = new THREE.Mesh(new THREE.CapsuleGeometry(0.068, 0.18, 10, 18), skinMat);
-      noseBridge.rotation.x = -0.22;
-      noseBridge.position.set(0, 0.05, -0.02);
-      const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.095, 24, 24), noseTipMat);
-      noseTip.scale.set(1.12, 0.85, 0.92);
-      noseTip.position.set(0, -0.06, 0.045);
-      noseGroup.add(noseBridge, noseTip);
+      noseGroup.position.set(0, -0.17, 1.01);
+      const noseButton = new THREE.Mesh(new THREE.SphereGeometry(0.088, 24, 24), noseTipMat);
+      noseButton.scale.set(1.24, 0.76, 0.90);
+      const noseBridge = new THREE.Mesh(new THREE.CapsuleGeometry(0.046, 0.11, 8, 14), skinPlainMat);
+      noseBridge.position.set(0, 0.06, -0.03);
+      noseBridge.rotation.x = -0.25;
+      noseGroup.add(noseBridge, noseButton);
       headGroup.add(noseGroup);
 
-      // Rounded stylized ears
+      // Cute low-set rounded cartoon ears
       function buildEar(side) {
         const earGroup = new THREE.Group();
-        const outer = new THREE.Mesh(new THREE.SphereGeometry(0.20, 24, 24), skinMat);
-        outer.scale.set(0.55, 1.08, 0.72);
-        const inner = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 16), lidMat);
-        inner.scale.set(0.45, 0.85, 0.55);
-        inner.position.set(side * 0.03, -0.01, 0.04);
+        const outer = new THREE.Mesh(new THREE.SphereGeometry(0.21, 24, 24), skinPlainMat);
+        outer.scale.set(0.54, 1.06, 0.70);
+        const inner = new THREE.Mesh(new THREE.SphereGeometry(0.115, 16, 16), earInnerMat);
+        inner.scale.set(0.45, 0.84, 0.52);
+        inner.position.set(side * 0.035, -0.01, 0.04);
         earGroup.add(outer, inner);
-        earGroup.position.set(side * 0.98, -0.06, -0.04);
-        earGroup.rotation.y = side * 0.18;
-        earGroup.rotation.z = side * -0.12;
+        earGroup.position.set(side * 1.02, -0.14, -0.05);
+        earGroup.rotation.y = side * 0.24;
+        earGroup.rotation.z = side * -0.14;
         return earGroup;
       }
       headGroup.add(buildEar(-1), buildEar(1));
 
-      // Soft voluminous Instagram-style hair (smooth crown + sculpted rounded locks)
+      // Signature brushed-up voluminous black cartoon kid hair (clean high forehead)
       const hairGroup = new THREE.Group();
-      const hairCap = new THREE.Mesh(
-        new THREE.SphereGeometry(1.11, 48, 36, 0, Math.PI * 2, 0, Math.PI * 0.62),
+
+      const hairBase = new THREE.Mesh(
+        new THREE.SphereGeometry(1.13, 48, 36, 0, Math.PI * 2, 0, Math.PI * 0.56),
         hairMat
       );
-      hairCap.scale.set(0.98, 1.06, 1.02);
-      hairCap.position.set(0, 0.18, -0.08);
-      hairCap.rotation.x = -0.18;
-      hairGroup.add(hairCap);
+      hairBase.scale.set(1.03, 1.12, 1.06);
+      hairBase.position.set(0, 0.24, -0.14);
+      hairBase.rotation.x = -0.34;
+      hairGroup.add(hairBase);
 
-      const backHair = new THREE.Mesh(new THREE.SphereGeometry(1.06, 36, 28), hairMat);
-      backHair.scale.set(0.95, 1.0, 0.88);
-      backHair.position.set(0, 0.02, -0.26);
+      const backHair = new THREE.Mesh(new THREE.SphereGeometry(1.08, 36, 28), hairMat);
+      backHair.scale.set(1.00, 1.02, 0.90);
+      backHair.position.set(0, 0.08, -0.28);
       hairGroup.add(backHair);
 
-      // Soft swooping bangs / waves on forehead and temples
-      const hairLocks = [
-        { pos: [-0.36, 0.94, 0.52], rot: [0.25, 0.25, 0.62], r: 0.22, len: 0.52, sx: 1.15, sy: 1.0, sz: 0.75 },
-        { pos: [0.06, 1.02, 0.56],  rot: [0.30, -0.10, -0.35], r: 0.24, len: 0.58, sx: 1.2, sy: 1.0, sz: 0.78 },
-        { pos: [0.46, 0.88, 0.48],  rot: [0.25, -0.30, -0.78], r: 0.20, len: 0.46, sx: 1.1, sy: 1.0, sz: 0.75 },
-        { pos: [-0.76, 0.64, 0.26], rot: [0.10, 0.35, 0.25], r: 0.20, len: 0.48, sx: 0.85, sy: 1.0, sz: 0.85 },
-        { pos: [0.76, 0.64, 0.26],  rot: [0.10, -0.35, -0.25], r: 0.20, len: 0.48, sx: 0.85, sy: 1.0, sz: 0.85 },
-        { pos: [-0.90, 0.25, 0.08], rot: [0.05, 0.18, 0.08], r: 0.13, len: 0.42, sx: 0.75, sy: 1.0, sz: 0.85 },
-        { pos: [0.90, 0.25, 0.08],  rot: [0.05, -0.18, -0.08], r: 0.13, len: 0.42, sx: 0.75, sy: 1.0, sz: 0.85 },
+      // Sculpted brushed-up top pompadour waves & side volume
+      const hairWaves = [
+        // Central high brushed-up crest
+        { pos: [-0.04, 1.18, 0.18], rot: [-0.28, 0.06, -0.10], r: 0.36, len: 0.56, sx: 1.25, sy: 1.05, sz: 0.95 },
+        { pos: [-0.42, 1.06, 0.22], rot: [-0.20, 0.22, 0.34],  r: 0.30, len: 0.52, sx: 1.10, sy: 1.00, sz: 0.90 },
+        { pos: [0.40, 1.04, 0.20],  rot: [-0.20, -0.22, -0.38], r: 0.30, len: 0.50, sx: 1.10, sy: 1.00, sz: 0.90 },
+        // Soft wavy hairline ridge (keeps forehead clean and open)
+        { pos: [-0.28, 0.90, 0.50], rot: [0.18, 0.24, 0.72],  r: 0.22, len: 0.44, sx: 1.12, sy: 0.92, sz: 0.72 },
+        { pos: [0.22, 0.92, 0.50],  rot: [0.18, -0.20, -0.68], r: 0.23, len: 0.46, sx: 1.15, sy: 0.92, sz: 0.72 },
+        // Fluffy side tufts framing temples above the ears
+        { pos: [-0.90, 0.54, 0.14], rot: [0.06, 0.28, 0.22],  r: 0.24, len: 0.54, sx: 0.85, sy: 1.05, sz: 0.92 },
+        { pos: [0.90, 0.54, 0.14],  rot: [0.06, -0.28, -0.22], r: 0.24, len: 0.54, sx: 0.85, sy: 1.05, sz: 0.92 },
+        { pos: [-0.96, 0.16, 0.02], rot: [0.04, 0.18, 0.08],  r: 0.16, len: 0.36, sx: 0.78, sy: 1.00, sz: 0.86 },
+        { pos: [0.96, 0.16, 0.02],  rot: [0.04, -0.18, -0.08], r: 0.16, len: 0.36, sx: 0.78, sy: 1.00, sz: 0.86 },
       ];
-      hairLocks.forEach((lk) => {
-        const lockMesh = new THREE.Mesh(
-          new THREE.CapsuleGeometry(lk.r, lk.len, 12, 20),
-          hairMat
-        );
-        lockMesh.position.set(...lk.pos);
-        lockMesh.rotation.set(...lk.rot);
-        lockMesh.scale.set(lk.sx, lk.sy, lk.sz);
-        hairGroup.add(lockMesh);
+      hairWaves.forEach((w) => {
+        const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(w.r, w.len, 12, 22), hairMat);
+        mesh.position.set(...w.pos);
+        mesh.rotation.set(...w.rot);
+        mesh.scale.set(w.sx, w.sy, w.sz);
+        hairGroup.add(mesh);
       });
       headGroup.add(hairGroup);
 
-      // Expressive glossy Pixar / Instagram Avatar Eyes
+      // Large, expressive Pixar-style Cartoon Eyes
       const scleraMat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
-        roughness: 0.14,
-        clearcoat: 0.65,
-        clearcoatRoughness: 0.08,
+        roughness: 0.10,
+        clearcoat: 0.85,
+        clearcoatRoughness: 0.05,
       });
-      const irisOuterMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.22 });
-      const irisInnerMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.18 });
-      const pupilMat = new THREE.MeshStandardMaterial({ color: 0x0b1120, roughness: 0.08 });
+      const irisMat = new THREE.MeshStandardMaterial({
+        map: irisTex,
+        roughness: 0.18,
+        metalness: 0.05,
+      });
+      const pupilMat = new THREE.MeshStandardMaterial({ color: 0x090b10, roughness: 0.05 });
       const catchMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      const lashMat = new THREE.MeshStandardMaterial({ color: 0x1c1412, roughness: 0.5 });
+      const lashMat = new THREE.MeshStandardMaterial({ color: 0x121216, roughness: 0.45 });
 
       function buildEye(side) {
         const g = new THREE.Group();
-        g.position.set(side * 0.36, 0.13, 0.84);
+        g.position.set(side * 0.38, 0.10, 0.84);
 
-        const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.185, 32, 32), scleraMat);
-        sclera.scale.set(1.04, 0.96, 0.78);
+        const eyeRadius = 0.225;
+        const sclera = new THREE.Mesh(new THREE.SphereGeometry(eyeRadius, 36, 36), scleraMat);
+        sclera.scale.set(1.02, 1.02, 0.86);
         g.add(sclera);
 
-        const irisGroup = new THREE.Group();
-        const irisOuter = new THREE.Mesh(new THREE.CircleGeometry(0.102, 28), irisOuterMat);
-        irisOuter.position.z = 0.146;
-        const irisInner = new THREE.Mesh(new THREE.CircleGeometry(0.082, 24), irisInnerMat);
-        irisInner.position.z = 0.148;
-        const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.052, 24), pupilMat);
-        pupil.position.z = 0.151;
-        // Double glossy catchlight for lively avatar eyes
-        const catchMain = new THREE.Mesh(new THREE.CircleGeometry(0.024, 16), catchMat);
-        catchMain.position.set(0.032, 0.036, 0.155);
-        const catchSub = new THREE.Mesh(new THREE.CircleGeometry(0.011, 12), catchMat);
-        catchSub.position.set(-0.026, -0.028, 0.155);
-        irisGroup.add(irisOuter, irisInner, pupil, catchMain, catchSub);
-        g.add(irisGroup);
+        // Eye gaze pivot rotates the cornea/iris/pupil around the eyeball center
+        const gazePivot = new THREE.Group();
+        const iris = new THREE.Mesh(new THREE.CircleGeometry(0.132, 32), irisMat);
+        iris.position.z = eyeRadius * 0.865;
 
-        // Curved spherical-cap eyelids that rotate smoothly around the eyeball
+        const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.072, 28), pupilMat);
+        pupil.position.z = eyeRadius * 0.880;
+
+        // Bright Pixar window catchlights
+        const catchMain = new THREE.Mesh(new THREE.CircleGeometry(0.034, 18), catchMat);
+        catchMain.position.set(-0.042, 0.048, eyeRadius * 0.895);
+        const catchSub = new THREE.Mesh(new THREE.CircleGeometry(0.015, 14), catchMat);
+        catchSub.position.set(0.036, -0.036, eyeRadius * 0.895);
+
+        gazePivot.add(iris, pupil, catchMain, catchSub);
+        g.add(gazePivot);
+
+        // Smooth spherical-cap upper eyelid with thick curved black upper lash line
         const upperLidPivot = new THREE.Group();
         const upperLidCap = new THREE.Mesh(
-          new THREE.SphereGeometry(0.198, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.48),
+          new THREE.SphereGeometry(eyeRadius + 0.015, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.50),
           lidMat
         );
-        upperLidCap.scale.set(1.06, 0.99, 0.83);
-        const lashArc = new THREE.Mesh(
-          new THREE.TorusGeometry(0.196, 0.015, 10, 24, Math.PI * 0.72),
+        upperLidCap.scale.set(1.04, 1.04, 0.90);
+
+        const upperLash = new THREE.Mesh(
+          new THREE.TorusGeometry(eyeRadius + 0.016, 0.020, 12, 28, Math.PI * 0.78),
           lashMat
         );
-        lashArc.rotation.x = Math.PI / 2;
-        lashArc.rotation.z = Math.PI * 0.14;
-        lashArc.scale.set(1.04, 0.84, 1.0);
-        upperLidPivot.add(upperLidCap, lashArc);
-        upperLidPivot.rotation.x = -0.68;
+        upperLash.rotation.x = Math.PI / 2;
+        upperLash.rotation.z = Math.PI * 0.11;
+        upperLash.scale.set(1.03, 0.91, 1.0);
+        upperLidPivot.add(upperLidCap, upperLash);
+        upperLidPivot.rotation.x = -0.78;
         g.add(upperLidPivot);
 
+        // Smooth lower eyelid with subtle lower lash rim
         const lowerLidPivot = new THREE.Group();
         const lowerLidCap = new THREE.Mesh(
-          new THREE.SphereGeometry(0.196, 28, 16, 0, Math.PI * 2, Math.PI * 0.56, Math.PI * 0.44),
+          new THREE.SphereGeometry(eyeRadius + 0.013, 32, 18, 0, Math.PI * 2, Math.PI * 0.54, Math.PI * 0.46),
           lidMat
         );
-        lowerLidCap.scale.set(1.05, 0.98, 0.82);
-        lowerLidPivot.add(lowerLidCap);
-        lowerLidPivot.rotation.x = 0.52;
+        lowerLidCap.scale.set(1.03, 1.03, 0.89);
+
+        const lowerRim = new THREE.Mesh(
+          new THREE.TorusGeometry(eyeRadius + 0.014, 0.008, 8, 24, Math.PI * 0.68),
+          lashMat
+        );
+        lowerRim.rotation.x = Math.PI / 2;
+        lowerRim.rotation.z = Math.PI * 0.16;
+        lowerRim.scale.set(1.02, 0.89, 1.0);
+        lowerLidPivot.add(lowerLidCap, lowerRim);
+        lowerLidPivot.rotation.x = 0.62;
         g.add(lowerLidPivot);
 
-        return { group: g, irisGroup, upperLidPivot, lowerLidPivot };
+        return { group: g, gazePivot, pupil, upperLidPivot, lowerLidPivot };
       }
 
       const leftEye = buildEye(-1);
       const rightEye = buildEye(1);
       headGroup.add(leftEye.group, rightEye.group);
 
-      // Soft rounded capsule eyebrows
-      const browGeo = new THREE.CapsuleGeometry(0.042, 0.24, 10, 18);
-      browGeo.rotateZ(Math.PI / 2);
-      const leftBrow = new THREE.Mesh(browGeo, browMat);
-      leftBrow.position.set(-0.37, 0.42, 0.94);
-      leftBrow.rotation.y = -0.18;
-      const rightBrow = new THREE.Mesh(browGeo, browMat);
-      rightBrow.position.set(0.37, 0.42, 0.94);
-      rightBrow.rotation.y = 0.18;
-      headGroup.add(leftBrow, rightBrow);
+      // Curved expressive cartoon eyebrows (rebuilt cleanly when arch changes)
+      const leftBrowGroup = new THREE.Group();
+      const rightBrowGroup = new THREE.Group();
+      leftBrowGroup.position.set(-0.38, 0.44, 0.96);
+      rightBrowGroup.position.set(0.38, 0.44, 0.96);
+      headGroup.add(leftBrowGroup, rightBrowGroup);
 
-      // Expressive smooth lips + teeth + tongue
+      let leftBrowMesh = null, rightBrowMesh = null;
+      function updateBrows(archVal) {
+        [leftBrowMesh, rightBrowMesh].forEach((m, idx) => {
+          if (m) {
+            (idx === 0 ? leftBrowGroup : rightBrowGroup).remove(m);
+            m.geometry.dispose();
+          }
+        });
+        function makeBrowGeo(side) {
+          const pts = [
+            new THREE.Vector3(-side * 0.18, -0.01, -0.01),
+            new THREE.Vector3(-side * 0.04, archVal * 0.72, 0.04),
+            new THREE.Vector3(side * 0.12, archVal * 0.52, 0.02),
+            new THREE.Vector3(side * 0.22, -0.03, -0.05),
+          ];
+          return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 18, 0.038, 12, false);
+        }
+        leftBrowMesh = new THREE.Mesh(makeBrowGeo(-1), browMat);
+        rightBrowMesh = new THREE.Mesh(makeBrowGeo(1), browMat);
+        leftBrowGroup.add(leftBrowMesh);
+        rightBrowGroup.add(rightBrowMesh);
+      }
+      updateBrows(0.08);
+
+      // Expressive smooth cartoon mouth (lips, teeth, tongue)
       const mouthGroup = new THREE.Group();
-      mouthGroup.position.set(0, -0.49, 0.88);
+      mouthGroup.position.set(0, -0.45, 0.90);
       headGroup.add(mouthGroup);
 
-      const cavityMat = new THREE.MeshBasicMaterial({ color: 0x3b0d16 });
-      const teethMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.18 });
-      const tongueMat = new THREE.MeshStandardMaterial({ color: 0xec6b7c, roughness: 0.42 });
+      const cavityMat = new THREE.MeshBasicMaterial({ color: 0x3b0c18 });
+      const teethMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15 });
+      const tongueMat = new THREE.MeshStandardMaterial({ color: 0xf06d80, roughness: 0.40 });
       let upperLip = null, lowerLip = null, cavity = null, teeth = null, tongue = null;
 
-      function updateMouth(curveVal, openVal) {
+      function updateMouth(curveVal, openVal, widthVal) {
         [upperLip, lowerLip, cavity, teeth, tongue].forEach((m) => {
           if (m) { mouthGroup.remove(m); m.geometry.dispose(); }
         });
         upperLip = lowerLip = cavity = teeth = tongue = null;
 
-        const w = 0.25 + Math.max(0, curveVal) * 0.08;
+        const w = widthVal;
+        const cornerY = curveVal * 0.14;
         const upPts = [
-          new THREE.Vector3(-w, curveVal * 0.12, -0.02),
-          new THREE.Vector3(-w * 0.42, -curveVal * 0.06 + openVal * 0.10 + 0.02, 0.06),
-          new THREE.Vector3(0, -curveVal * 0.09 + openVal * 0.10, 0.085),
-          new THREE.Vector3(w * 0.42, -curveVal * 0.06 + openVal * 0.10 + 0.02, 0.06),
-          new THREE.Vector3(w, curveVal * 0.12, -0.02),
+          new THREE.Vector3(-w, cornerY, -0.03),
+          new THREE.Vector3(-w * 0.45, -curveVal * 0.05 + openVal * 0.10 + 0.018, 0.055),
+          new THREE.Vector3(0, -curveVal * 0.08 + openVal * 0.10, 0.082),
+          new THREE.Vector3(w * 0.45, -curveVal * 0.05 + openVal * 0.10 + 0.018, 0.055),
+          new THREE.Vector3(w, cornerY, -0.03),
         ];
         const lowPts = [
-          new THREE.Vector3(-w, curveVal * 0.12, -0.02),
-          new THREE.Vector3(0, -curveVal * 0.22 - openVal * 0.26 - 0.03, 0.082),
-          new THREE.Vector3(w, curveVal * 0.12, -0.02),
+          new THREE.Vector3(-w, cornerY, -0.03),
+          new THREE.Vector3(0, -curveVal * 0.20 - openVal * 0.28 - 0.025, 0.078),
+          new THREE.Vector3(w, cornerY, -0.03),
         ];
 
         upperLip = new THREE.Mesh(
-          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(upPts), 24, 0.032, 12, false),
+          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(upPts), 24, 0.026, 12, false),
           lipMat
         );
         lowerLip = new THREE.Mesh(
-          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lowPts), 24, 0.038, 12, false),
+          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lowPts), 24, 0.031, 12, false),
           lipMat
         );
         mouthGroup.add(upperLip, lowerLip);
 
-        if (openVal > 0.045) {
-          cavity = new THREE.Mesh(new THREE.CircleGeometry(0.11 + openVal * 0.20, 24), cavityMat);
-          cavity.scale.set(1.28, 0.48 + openVal * 0.95, 1.0);
-          cavity.position.set(0, -curveVal * 0.08 - openVal * 0.06, 0.035);
+        if (openVal > 0.04) {
+          cavity = new THREE.Mesh(new THREE.CircleGeometry(0.10 + openVal * 0.19, 24), cavityMat);
+          cavity.scale.set(1.22, 0.45 + openVal * 0.96, 1.0);
+          cavity.position.set(0, -curveVal * 0.06 - openVal * 0.06, 0.032);
           mouthGroup.add(cavity);
 
-          // Upper teeth visible on smile or open mouth
-          if (curveVal > 0.08 || openVal > 0.12) {
+          if (curveVal > 0.05 || openVal > 0.11) {
             teeth = new THREE.Mesh(
-              new THREE.CapsuleGeometry(0.032, Math.min(0.24, w * 0.92), 6, 12),
+              new THREE.CapsuleGeometry(0.030, Math.min(0.22, w * 0.88), 6, 12),
               teethMat
             );
             teeth.rotation.z = Math.PI / 2;
-            teeth.scale.set(1.0, 1.0, 0.45);
-            teeth.position.set(0, -curveVal * 0.04 + openVal * 0.055 - 0.015, 0.055);
+            teeth.scale.set(1.0, 1.0, 0.42);
+            teeth.position.set(0, -curveVal * 0.03 + openVal * 0.055 - 0.012, 0.052);
             mouthGroup.add(teeth);
           }
 
-          if (openVal > 0.14) {
-            tongue = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), tongueMat);
-            tongue.scale.set(1.25, 0.48, 0.6);
-            tongue.position.set(0, -curveVal * 0.10 - openVal * 0.15, 0.048);
+          if (openVal > 0.13) {
+            tongue = new THREE.Mesh(new THREE.SphereGeometry(0.068, 16, 12), tongueMat);
+            tongue.scale.set(1.25, 0.46, 0.58);
+            tongue.position.set(0, -curveVal * 0.09 - openVal * 0.15, 0.045);
             mouthGroup.add(tongue);
           }
         }
       }
-      updateMouth(0.05, 0.02);
+      updateMouth(0.14, 0.01, 0.24);
 
       const cur = { ...EXPRESSIONS.neutral };
       const targetRim = new THREE.Color(faceState.bgPrimary);
       const targetBlush = new THREE.Color(0xfb7185);
       let blinkTimer = 0;
+      let nextBlinkAt = 3.2;
+      let saccadeTimer = 0;
+      let saccadeX = 0, saccadeY = 0;
       let lastMouth = "";
+      let lastArch = "";
 
       window.addEventListener("resize", () => {
         const w = container.clientWidth;
@@ -823,59 +983,83 @@
         const t = clock.elapsedTime;
 
         const target = EXPRESSIONS[faceState.expression] || EXPRESSIONS.neutral;
-        const s = 6.5 * dt;
+        const s = 6.8 * dt;
         Object.keys(cur).forEach((k) => { cur[k] += (target[k] - cur[k]) * s; });
 
         targetRim.set(faceState.bgPrimary);
         rimLeft.color.lerp(targetRim, s);
         rimRight.color.lerp(targetRim, s);
 
-        // Dynamic cheek blush based on emotional state
-        let desiredBlushOpacity = 0.14;
-        if (faceState.expression === "happy" || faceState.expression === "warm") {
-          desiredBlushOpacity = 0.28;
-          targetBlush.set(0xfb7185);
-        } else if (faceState.expression === "angry") {
-          desiredBlushOpacity = 0.32;
-          targetBlush.set(0xef4444);
-        } else if (faceState.expression === "sad" || faceState.expression === "fearful") {
-          desiredBlushOpacity = 0.08;
-          targetBlush.set(0x94a3b8);
-        } else {
-          targetBlush.set(0xfb7185);
-        }
-        blushMat.opacity += (desiredBlushOpacity - blushMat.opacity) * s;
+        // Dynamic emotional blush tint
+        if (faceState.expression === "angry") targetBlush.set(0xef4444);
+        else if (faceState.expression === "sad" || faceState.expression === "fearful") targetBlush.set(0x94a3b8);
+        else targetBlush.set(0xfb7185);
+        blushMat.opacity += (cur.blush - blushMat.opacity) * s;
         blushMat.color.lerp(targetBlush, s);
 
+        // Natural randomized blink cycle
         blinkTimer += dt;
         let blinkAngle = 0;
-        if (blinkTimer > 3.6) {
-          const b = blinkTimer - 3.6;
-          if (b < 0.14) blinkAngle = Math.sin((b / 0.14) * Math.PI) * 0.85;
-          else blinkTimer = 0;
+        if (blinkTimer > nextBlinkAt) {
+          const b = blinkTimer - nextBlinkAt;
+          if (b < 0.15) {
+            blinkAngle = Math.sin((b / 0.15) * Math.PI) * 0.96;
+          } else {
+            blinkTimer = 0;
+            nextBlinkAt = 2.6 + Math.random() * 2.4;
+          }
         }
 
-        // Smooth eyelid rotation
-        const upperRotX = -0.68 + cur.upperLid * 0.88 + blinkAngle;
-        const lowerRotX = 0.56 - cur.lowerLid * 0.72;
+        // Subtle natural eye micro-saccades layered over mouse tracking
+        saccadeTimer += dt;
+        if (saccadeTimer > 1.8) {
+          saccadeTimer = 0;
+          saccadeX = (Math.random() - 0.5) * 0.06;
+          saccadeY = (Math.random() - 0.5) * 0.04;
+        }
+
+        // Smooth eyelid articulation & Duchenne smile lower-lid lift
+        const upperRotX = -0.78 + cur.upperLid * 0.95 + blinkAngle;
+        const lowerRotX = 0.62 - cur.lowerLid * 0.78;
         leftEye.upperLidPivot.rotation.x = upperRotX;
         rightEye.upperLidPivot.rotation.x = upperRotX;
         leftEye.lowerLidPivot.rotation.x = lowerRotX;
         rightEye.lowerLidPivot.rotation.x = lowerRotX;
-        leftEye.upperLidPivot.rotation.z = cur.browTilt * 0.32;
-        rightEye.upperLidPivot.rotation.z = -cur.browTilt * 0.32;
+        leftEye.upperLidPivot.rotation.z = cur.browTilt * 0.36;
+        rightEye.upperLidPivot.rotation.z = -cur.browTilt * 0.36;
 
-        leftEye.irisGroup.position.set(faceState.mouseX * 0.042, faceState.mouseY * 0.032, 0);
-        rightEye.irisGroup.position.set(faceState.mouseX * 0.042, faceState.mouseY * 0.032, 0);
+        // Smooth eyeball gaze rotation (follows pointer + subtle micro-saccades)
+        const targetGazeY = Math.max(-0.32, Math.min(0.32, faceState.mouseX * 0.28 + saccadeX));
+        const targetGazeX = Math.max(-0.22, Math.min(0.22, -faceState.mouseY * 0.20 + saccadeY));
+        leftEye.gazePivot.rotation.y += (targetGazeY - leftEye.gazePivot.rotation.y) * 10 * dt;
+        rightEye.gazePivot.rotation.y += (targetGazeY - rightEye.gazePivot.rotation.y) * 10 * dt;
+        leftEye.gazePivot.rotation.x += (targetGazeX - leftEye.gazePivot.rotation.x) * 10 * dt;
+        rightEye.gazePivot.rotation.x += (targetGazeX - rightEye.gazePivot.rotation.x) * 10 * dt;
 
-        leftBrow.position.y = cur.browY;
-        rightBrow.position.y = cur.browY;
-        leftBrow.rotation.z = cur.browTilt;
-        rightBrow.rotation.z = -cur.browTilt;
+        // Emotional pupil dilation / constriction
+        leftEye.pupil.scale.setScalar(cur.pupilScale);
+        rightEye.pupil.scale.setScalar(cur.pupilScale);
 
-        const mh = `${cur.mouthCurve.toFixed(2)}_${cur.mouthOpen.toFixed(2)}`;
+        // Expressive arched eyebrows
+        leftBrowGroup.position.y = cur.browY;
+        rightBrowGroup.position.y = cur.browY;
+        leftBrowGroup.rotation.z = cur.browTilt;
+        rightBrowGroup.rotation.z = -cur.browTilt;
+        const ah = cur.browArch.toFixed(2);
+        if (ah !== lastArch) {
+          updateBrows(cur.browArch);
+          lastArch = ah;
+        }
+
+        // Subtle speaking mouth modulation during gesture/response window
+        let speakOpen = 0;
+        if (faceState.gestureTimer > 0.2) {
+          speakOpen = Math.abs(Math.sin(t * 14)) * 0.08 * Math.min(1, faceState.gestureTimer);
+        }
+        const effectiveOpen = Math.min(0.36, cur.mouthOpen + speakOpen);
+        const mh = `${cur.mouthCurve.toFixed(2)}_${effectiveOpen.toFixed(2)}_${cur.mouthWidth.toFixed(2)}`;
         if (mh !== lastMouth) {
-          updateMouth(cur.mouthCurve, cur.mouthOpen);
+          updateMouth(cur.mouthCurve, effectiveOpen, cur.mouthWidth);
           lastMouth = mh;
         }
 
@@ -883,17 +1067,17 @@
         if (faceState.gestureTimer > 0) {
           faceState.gestureTimer = Math.max(0, faceState.gestureTimer - dt);
           const p = faceState.gestureTimer * Math.PI * 2;
-          if (faceState.gesture === "happy_nod") gX = Math.sin(p * 2) * 0.15;
-          else if (faceState.gesture === "raised_hand") gY = Math.sin(p * 2.5) * 0.20;
-          else if (faceState.gesture === "slight_bow") gX = 0.18 * Math.sin(p * 0.5);
-          else if (faceState.gesture === "gentle_head_tilt") gZ = 0.15;
+          if (faceState.gesture === "happy_nod") gX = Math.sin(p * 2) * 0.14;
+          else if (faceState.gesture === "raised_hand") gY = Math.sin(p * 2.5) * 0.18;
+          else if (faceState.gesture === "slight_bow") gX = 0.16 * Math.sin(p * 0.5);
+          else if (faceState.gesture === "gentle_head_tilt") gZ = 0.14;
           else if (faceState.gesture === "alert_posture") gX = -0.10;
         }
 
-        headGroup.position.y = Math.sin(t * 1.5) * 0.035;
-        headGroup.rotation.y += (faceState.mouseX * 0.24 + gY - headGroup.rotation.y) * 4.5 * dt;
-        headGroup.rotation.x += (-faceState.mouseY * 0.14 + gX - headGroup.rotation.x) * 4.5 * dt;
-        headGroup.rotation.z += (gZ - headGroup.rotation.z) * 4.5 * dt;
+        headGroup.position.y = Math.sin(t * 1.6) * 0.032;
+        headGroup.rotation.y += (faceState.mouseX * 0.22 + gY - headGroup.rotation.y) * 4.2 * dt;
+        headGroup.rotation.x += (-faceState.mouseY * 0.12 + gX - headGroup.rotation.x) * 4.2 * dt;
+        headGroup.rotation.z += (gZ - headGroup.rotation.z) * 4.2 * dt;
 
         renderer.render(scene, camera);
       }
