@@ -52,7 +52,7 @@ class OllamaClient:
     def __init__(
         self,
         model: str = "qwen2.5:3b",
-        base_url: str = "http://localhost:11434",
+        base_url: str = "http://127.0.0.1:11434",
         timeout: float = 15.0,
         mode: str = "auto",
         online_provider: str = "gemini",
@@ -61,7 +61,7 @@ class OllamaClient:
         online_base_url: str = "https://api.openai.com/v1",
     ) -> None:
         self.model = model
-        self.base_url = base_url.rstrip("/")
+        self.base_url = base_url.rstrip("/").replace("://localhost", "://127.0.0.1")
         self.timeout = timeout
         self.mode = mode  # "auto", "offline", "online", "fallback"
         self.online_provider = online_provider  # "gemini" or "openai"
@@ -69,6 +69,7 @@ class OllamaClient:
         self.api_key = api_key
         self.online_base_url = online_base_url.rstrip("/")
         self.last_source: str = "fallback"
+        self.last_error: Optional[str] = None
 
     def _resolve_api_key(self) -> Optional[str]:
         if self.api_key:
@@ -78,15 +79,17 @@ class OllamaClient:
         return os.environ.get("OPENAI_API_KEY")
 
     def _call_ollama(self, prompt: str) -> Optional[str]:
-        url = f"{self.base_url}/api/generate"
+        base = self.base_url.replace("://localhost", "://127.0.0.1")
+        url = f"{base}/api/generate"
         payload = {"model": self.model, "prompt": prompt, "stream": False}
         try:
-            response = requests.post(url, json=payload, timeout=self.timeout)
+            response = requests.post(url, json=payload, timeout=(0.45, self.timeout))
             response.raise_for_status()
             data = response.json()
             text = str(data.get("response", "")).strip()
             return text or None
-        except (requests.RequestException, ValueError):
+        except (requests.RequestException, ValueError) as exc:
+            self.last_error = f"Ollama non raggiungibile ({exc.__class__.__name__})"
             return None
 
     def _call_gemini(self, prompt: str, api_key: str) -> Optional[str]:
@@ -138,6 +141,7 @@ class OllamaClient:
     def _call_online(self, prompt: str) -> Optional[str]:
         api_key = self._resolve_api_key()
         if not api_key:
+            self.last_error = "API key mancante per modalità online"
             return None
         if self.online_provider == "openai":
             return self._call_openai(prompt, api_key)
@@ -145,6 +149,7 @@ class OllamaClient:
 
     def _complete(self, prompt: str) -> Tuple[Optional[str], str]:
         """Run prompt through the selected backend(s), returning (text, source)."""
+        self.last_error = None
         mode = self.mode.lower()
         if mode == "fallback":
             return None, "fallback"

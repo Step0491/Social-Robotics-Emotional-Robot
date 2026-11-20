@@ -50,6 +50,7 @@ def _serialize_turn(
         "reasoning_trace": r.reasoning_trace,
         "verbal_response": turn.verbal_response,
         "llm_source": turn.llm_source,
+        "llm_error": agent.llm_client.last_error,
         "extraction_source": turn.extraction_source,
         "graph_stats": agent.knowledge_graph.stats(),
     }

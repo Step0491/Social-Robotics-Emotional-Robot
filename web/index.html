@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Emotional Robot — 3D KG Simulator</title>
+  <title>Emotional Robot — 3D Cartoon Simulator</title>
   <style>
     :root {
       --bg-primary: #14b8a6;
       --bg-secondary: #0f2937;
       --accent: #5eead4;
-      --panel-bg: rgba(15, 23, 42, 0.88);
+      --panel-bg: rgba(15, 23, 42, 0.9);
       --border: rgba(255, 255, 255, 0.12);
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -28,10 +28,9 @@
 
     @media (max-width: 960px) {
       body { grid-template-columns: 1fr; }
-      .stage { min-height: 55vh; }
+      .stage { min-height: 56vh; }
     }
 
-    /* Left 3D Stage */
     .stage {
       position: relative;
       overflow: hidden;
@@ -39,7 +38,7 @@
       align-items: center;
       justify-content: center;
       background: radial-gradient(circle at 50% 45%, var(--bg-primary) 0%, var(--bg-secondary) 60%, #090d16 100%);
-      transition: background 0.8s ease;
+      transition: background 0.7s ease;
     }
 
     .stage::before {
@@ -47,30 +46,30 @@
       position: absolute;
       inset: -20%;
       background: radial-gradient(circle at 50% 45%, var(--bg-primary), transparent 62%);
-      opacity: 0.45;
+      opacity: 0.5;
       filter: blur(55px);
       animation: pulseAura 4.5s ease-in-out infinite;
       pointer-events: none;
     }
 
     @keyframes pulseAura {
-      0%, 100% { transform: scale(1); opacity: 0.4; }
-      50% { transform: scale(1.12); opacity: 0.65; }
+      0%, 100% { transform: scale(1); opacity: 0.42; }
+      50% { transform: scale(1.12); opacity: 0.68; }
     }
 
     #canvas-container {
       position: relative;
       width: 100%;
       height: 100%;
-      min-height: 500px;
+      min-height: 520px;
       z-index: 2;
     }
 
     .hud-top {
       position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
+      top: 18px;
+      left: 18px;
+      right: 18px;
       z-index: 5;
       display: flex;
       justify-content: space-between;
@@ -79,13 +78,13 @@
     }
 
     .badge {
-      background: rgba(15, 23, 42, 0.72);
+      background: rgba(15, 23, 42, 0.74);
       border: 1px solid var(--border);
       backdrop-filter: blur(8px);
-      padding: 8px 14px;
+      padding: 7px 14px;
       border-radius: 999px;
-      font-size: 0.85rem;
-      letter-spacing: 0.04em;
+      font-size: 0.83rem;
+      letter-spacing: 0.03em;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -101,9 +100,9 @@
 
     .hud-bottom {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
+      bottom: 18px;
+      left: 18px;
+      right: 18px;
       z-index: 5;
       display: flex;
       flex-wrap: wrap;
@@ -114,12 +113,12 @@
     }
 
     .emotion-card {
-      background: rgba(15, 23, 42, 0.78);
+      background: rgba(15, 23, 42, 0.8);
       border: 1px solid var(--border);
       backdrop-filter: blur(10px);
       padding: 14px 18px;
       border-radius: 14px;
-      min-width: 240px;
+      min-width: 250px;
     }
 
     .emotion-title {
@@ -150,34 +149,44 @@
       transition: width 0.5s ease, background 0.5s ease;
     }
 
-    /* Right Control Panel */
     .panel {
       background: var(--panel-bg);
       border-left: 1px solid var(--border);
-      padding: 22px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       overflow-y: auto;
       max-height: 100vh;
     }
 
     h1 { font-size: 1.2rem; font-weight: 700; }
-    .subtitle { font-size: 0.84rem; color: var(--muted); margin-top: 3px; }
+    .subtitle { font-size: 0.83rem; color: var(--muted); margin-top: 3px; }
+
+    .banner-warn {
+      display: none;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fde68a;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
 
     .section {
       background: rgba(30, 41, 59, 0.55);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 14px;
+      padding: 13px;
     }
 
     .section-title {
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--muted);
-      margin-bottom: 10px;
+      margin-bottom: 9px;
       font-weight: 600;
     }
 
@@ -189,18 +198,16 @@
 
     input[type="text"], input[type="password"], select {
       width: 100%;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 10px 12px;
+      padding: 9px 11px;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       outline: none;
     }
 
-    input:focus, select:focus {
-      border-color: var(--accent);
-    }
+    input:focus, select:focus { border-color: var(--accent); }
 
     button {
       cursor: pointer;
@@ -210,12 +217,13 @@
       transition: transform 0.1s ease, opacity 0.2s ease, background 0.2s ease;
     }
 
+    button:disabled { opacity: 0.55; cursor: wait; }
     button:active { transform: scale(0.97); }
 
     .btn-primary {
       background: var(--accent);
       color: #0f172a;
-      padding: 10px 16px;
+      padding: 9px 16px;
       white-space: nowrap;
     }
 
@@ -235,7 +243,7 @@
     }
 
     .chip {
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--border);
       color: var(--text);
       padding: 6px 10px;
@@ -245,14 +253,14 @@
 
     .chip:hover {
       border-color: var(--accent);
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.16);
     }
 
     .response-box {
-      font-size: 0.96rem;
+      font-size: 0.95rem;
       line-height: 1.5;
       color: #f1f5f9;
-      min-height: 46px;
+      min-height: 44px;
     }
 
     .trace-list {
@@ -260,7 +268,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: #cbd5e1;
     }
 
@@ -287,7 +295,7 @@
 
     .field-label {
       display: block;
-      font-size: 0.74rem;
+      font-size: 0.73rem;
       color: var(--muted);
       margin: 8px 0 4px;
     }
@@ -303,8 +311,8 @@
 <body>
   <main class="stage" id="stage">
     <div class="hud-top">
-      <div class="badge"><span class="dot"></span> <span id="kg-stats">KG: --</span></div>
-      <div class="badge" id="llm-badge">LLM: fallback</div>
+      <div class="badge"><span class="dot"></span> <span id="kg-stats">KG: 31 nodi · 62 archi</span></div>
+      <div class="badge" id="llm-badge">LLM: pronto</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -321,7 +329,11 @@
   <aside class="panel">
     <div>
       <h1>Ontology-Based Emotional Robot</h1>
-      <p class="subtitle">Scrivi un evento libero oppure seleziona uno scenario presettato.</p>
+      <p class="subtitle">Volto 3D cartoon definito + Knowledge Graph + LLM Offline/Online.</p>
+    </div>
+
+    <div class="banner-warn" id="file-warning">
+      Hai aperto il file HTML direttamente (<code>file://</code>). Per usare Python, Knowledge Graph e Ollama/API online, avvia <code>python web_app.py</code> e apri <strong>http://127.0.0.1:8000</strong>. (Intanto la preview locale resta attiva).
     </div>
 
     <div class="section">
@@ -344,7 +356,7 @@
         <div>
           <label class="field-label" for="llm-mode">Modalità LLM</label>
           <select id="llm-mode">
-            <option value="auto">Auto (Online -> Offline -> Fallback)</option>
+            <option value="auto">Auto (Online -> Ollama -> Fallback)</option>
             <option value="offline">Offline (Ollama locale)</option>
             <option value="online">Online (Gemini / OpenAI)</option>
             <option value="fallback">Fallback (istantaneo)</option>
@@ -356,14 +368,14 @@
     <div class="section">
       <div class="section-title">Eventi Presettati</div>
       <div class="presets">
-        <button class="chip" data-text="Ciao! Buongiorno robot" data-event="user_greeting" data-ctx="casual_conversation">Saluto</button>
-        <button class="chip" data-text="Bravo, hai fatto un ottimo lavoro!" data-event="user_praise" data-ctx="casual_conversation">Complimento</button>
-        <button class="chip" data-text="Partita annullata per pioggia" data-event="" data-ctx="auto">Partita annullata</button>
-        <button class="chip" data-text="Mi sento molto triste e stressato oggi" data-event="user_distress" data-ctx="emotional_support">Tristezza / Stress</button>
-        <button class="chip" data-text="Sei inutile, mi fai arrabbiare!" data-event="user_hostility" data-ctx="casual_conversation">Rabbia / Insulto</button>
-        <button class="chip" data-text="Attenzione, c'è fumo vicino al laboratorio!" data-event="safety_alert" data-ctx="emergency">Allerta Sicurezza</button>
-        <button class="chip" data-text="Grazie, il task è riuscito!" data-event="task_success" data-ctx="assistance">Task Riuscito</button>
-        <button class="chip" data-text="..." data-event="user_silence" data-ctx="casual_conversation">Silenzio</button>
+        <button type="button" class="chip" data-text="Ciao! Buongiorno" data-event="user_greeting" data-ctx="casual_conversation">Saluto</button>
+        <button type="button" class="chip" data-text="Bravo, ottimo lavoro!" data-event="user_praise" data-ctx="casual_conversation">Complimento</button>
+        <button type="button" class="chip" data-text="Partita annullata per pioggia" data-event="" data-ctx="auto">Partita annullata</button>
+        <button type="button" class="chip" data-text="Mi sento triste e stressato oggi" data-event="user_distress" data-ctx="emotional_support">Tristezza / Stress</button>
+        <button type="button" class="chip" data-text="Sei inutile, mi fai arrabbiare!" data-event="user_hostility" data-ctx="casual_conversation">Rabbia / Insulto</button>
+        <button type="button" class="chip" data-text="Attenzione, c'è fumo in laboratorio!" data-event="safety_alert" data-ctx="emergency">Allerta Sicurezza</button>
+        <button type="button" class="chip" data-text="Grazie, il task è riuscito!" data-event="task_success" data-ctx="assistance">Task Riuscito</button>
+        <button type="button" class="chip" data-text="..." data-event="user_silence" data-ctx="casual_conversation">Silenzio</button>
       </div>
     </div>
 
@@ -391,7 +403,7 @@
           </div>
           <div>
             <label class="field-label" for="ollama-url">URL Ollama</label>
-            <input type="text" id="ollama-url" value="http://localhost:11434" />
+            <input type="text" id="ollama-url" value="http://127.0.0.1:11434" />
           </div>
         </div>
         <div class="grid-2">
@@ -414,13 +426,17 @@
 
     <div class="footer-actions">
       <span class="subtitle" id="status-msg">Pronto</span>
-      <button class="btn-secondary" id="reset-btn">Reset Stato</button>
+      <button type="button" class="btn-secondary" id="reset-btn">Reset Stato</button>
     </div>
   </aside>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script>
-    // Target expression parameters updated by the Knowledge Graph
+    const IS_FILE_MODE = window.location.protocol === "file:";
+    if (IS_FILE_MODE) {
+      document.getElementById("file-warning").style.display = "block";
+    }
+
     const faceState = {
       emotion: "calm",
       expression: "neutral",
@@ -435,15 +451,15 @@
     };
 
     const EXPRESSIONS = {
-      neutral:    { browY: 0.42, browTilt: 0.0,  eyeScaleY: 1.0,  mouthCurve: 0.05, mouthOpen: 0.02 },
-      happy:      { browY: 0.50, browTilt: -0.08, eyeScaleY: 0.85, mouthCurve: 0.38, mouthOpen: 0.08 },
-      warm:       { browY: 0.46, browTilt: -0.05, eyeScaleY: 0.92, mouthCurve: 0.25, mouthOpen: 0.04 },
-      empathetic: { browY: 0.48, browTilt: 0.18,  eyeScaleY: 0.90, mouthCurve: -0.10, mouthOpen: 0.03 },
-      sad:        { browY: 0.38, browTilt: 0.32,  eyeScaleY: 0.72, mouthCurve: -0.32, mouthOpen: 0.02 },
-      angry:      { browY: 0.30, browTilt: -0.42, eyeScaleY: 0.62, mouthCurve: -0.28, mouthOpen: 0.06 },
-      fearful:    { browY: 0.58, browTilt: 0.24,  eyeScaleY: 1.28, mouthCurve: -0.22, mouthOpen: 0.24 },
-      surprised:  { browY: 0.62, browTilt: 0.0,   eyeScaleY: 1.32, mouthCurve: 0.0,   mouthOpen: 0.28 },
-      curious:    { browY: 0.52, browTilt: 0.12,  eyeScaleY: 1.10, mouthCurve: 0.10,  mouthOpen: 0.04 },
+      neutral:    { browY: 0.43, browTilt: 0.0,   upperLid: 0.0,  lowerLid: 0.0,  mouthCurve: 0.06,  mouthOpen: 0.02, blush: 0.12 },
+      happy:      { browY: 0.51, browTilt: -0.08, upperLid: 0.05, lowerLid: 0.32, mouthCurve: 0.38,  mouthOpen: 0.14, blush: 0.42 },
+      warm:       { browY: 0.48, browTilt: -0.05, upperLid: 0.04, lowerLid: 0.18, mouthCurve: 0.26,  mouthOpen: 0.04, blush: 0.28 },
+      empathetic: { browY: 0.49, browTilt: 0.22,  upperLid: 0.14, lowerLid: 0.08, mouthCurve: -0.10, mouthOpen: 0.02, blush: 0.22 },
+      sad:        { browY: 0.40, browTilt: 0.35,  upperLid: 0.30, lowerLid: 0.05, mouthCurve: -0.32, mouthOpen: 0.02, blush: 0.08 },
+      angry:      { browY: 0.33, browTilt: -0.42, upperLid: 0.38, lowerLid: 0.20, mouthCurve: -0.26, mouthOpen: 0.08, blush: 0.55 },
+      fearful:    { browY: 0.56, browTilt: 0.24,  upperLid: -0.18, lowerLid: -0.05, mouthCurve: -0.20, mouthOpen: 0.28, blush: 0.05 },
+      surprised:  { browY: 0.58, browTilt: 0.0,   upperLid: -0.20, lowerLid: -0.05, mouthCurve: 0.0,   mouthOpen: 0.30, blush: 0.15 },
+      curious:    { browY: 0.52, browTilt: 0.14,  upperLid: -0.05, lowerLid: 0.0,  mouthCurve: 0.10,  mouthOpen: 0.04, blush: 0.15 },
     };
 
     const container = document.getElementById("canvas-container");
@@ -453,138 +469,287 @@
       faceState.mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
     });
 
-    function initThreeFace() {
+    function initThreeCartoonFace() {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
-        38,
+        35,
         container.clientWidth / Math.max(1, container.clientHeight),
         0.1,
         100
       );
-      camera.position.set(0, 0.15, 5.2);
+      camera.position.set(0, 0.12, 5.4);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
       container.appendChild(renderer.domElement);
 
-      // Lights
-      const ambient = new THREE.AmbientLight(0xffffff, 0.75);
-      scene.add(ambient);
+      // Crisp 3-point stylized cartoon lighting
+      const hemi = new THREE.HemisphereLight(0xfff5ee, 0x1e293b, 0.72);
+      scene.add(hemi);
 
-      const keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
-      keyLight.position.set(3, 4, 5);
+      const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.35);
+      keyLight.position.set(3.2, 4.2, 4.5);
       scene.add(keyLight);
 
-      const rimLight = new THREE.PointLight(0x5eead4, 2.4, 15);
-      rimLight.position.set(-2.8, 1.5, -1.5);
+      const fillLight = new THREE.DirectionalLight(0xcbd5e1, 0.45);
+      fillLight.position.set(-4.0, 1.0, 2.5);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.PointLight(0x5eead4, 3.0, 14);
+      rimLight.position.set(-2.6, 1.4, -2.0);
       scene.add(rimLight);
+
+      const rimLightRight = new THREE.PointLight(0x5eead4, 2.2, 14);
+      rimLightRight.position.set(2.6, -0.4, -2.0);
+      scene.add(rimLightRight);
 
       const headGroup = new THREE.Group();
       scene.add(headGroup);
 
-      // Humanoid ceramic-metallic shell
+      // Defined cartoon materials (warm pink/peach skin, non-mushy sculpted finish)
       const skinMat = new THREE.MeshStandardMaterial({
-        color: 0xe2e8f0,
-        roughness: 0.32,
-        metalness: 0.18,
+        color: 0xf4baa4,
+        roughness: 0.56,
+        metalness: 0.03,
+        flatShading: true,
       });
-      const darkMat = new THREE.MeshStandardMaterial({
-        color: 0x0f172a,
-        roughness: 0.4,
-        metalness: 0.5,
+      const skinSmoothMat = new THREE.MeshStandardMaterial({
+        color: 0xf2b59d,
+        roughness: 0.52,
+        metalness: 0.03,
       });
-      const accentMat = new THREE.MeshStandardMaterial({
-        color: 0x5eead4,
-        emissive: 0x5eead4,
-        emissiveIntensity: 0.9,
-        roughness: 0.2,
+      const lidMat = new THREE.MeshStandardMaterial({
+        color: 0xe39e86,
+        roughness: 0.58,
+        metalness: 0.02,
+      });
+      const hairMat = new THREE.MeshStandardMaterial({
+        color: 0x2b201d,
+        roughness: 0.65,
+        metalness: 0.08,
+        flatShading: true,
+      });
+      const lipMat = new THREE.MeshStandardMaterial({
+        color: 0xd6746c,
+        roughness: 0.42,
+        metalness: 0.05,
+      });
+      const blushMat = new THREE.MeshStandardMaterial({
+        color: 0xf4726a,
+        transparent: true,
+        opacity: 0.14,
+        roughness: 0.8,
+      });
+      const outfitMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.72,
+        flatShading: true,
       });
 
-      // Cranium + Jaw
-      const cranium = new THREE.Mesh(new THREE.SphereGeometry(1.12, 48, 48), skinMat);
-      cranium.scale.set(0.92, 1.06, 0.96);
-      cranium.position.y = 0.12;
+      // Sculpted cranium (defined low-mid poly planes)
+      const cranium = new THREE.Mesh(new THREE.IcosahedronGeometry(1.04, 2), skinMat);
+      cranium.scale.set(0.92, 1.04, 0.96);
+      cranium.position.set(0, 0.24, -0.02);
       headGroup.add(cranium);
 
-      const jaw = new THREE.Mesh(new THREE.SphereGeometry(0.82, 36, 36), skinMat);
-      jaw.scale.set(0.86, 0.92, 0.85);
-      jaw.position.set(0, -0.48, 0.14);
-      headGroup.add(jaw);
+      // Sculpted cheekbones & mid-face
+      const midFace = new THREE.Mesh(new THREE.CylinderGeometry(0.93, 0.74, 0.82, 12), skinMat);
+      midFace.scale.set(0.96, 1.0, 0.88);
+      midFace.position.set(0, -0.18, 0.08);
+      headGroup.add(midFace);
 
-      // Neck
-      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.44, 0.9, 28), darkMat);
-      neck.position.set(0, -1.45, -0.05);
+      // Defined tapered chin / jawline
+      const chin = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.30, 0.52, 10), skinMat);
+      chin.scale.set(0.95, 1.0, 0.86);
+      chin.position.set(0, -0.74, 0.14);
+      headGroup.add(chin);
+
+      // Neck & stylized shoulders/collar
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.75, 12), skinSmoothMat);
+      neck.position.set(0, -1.25, -0.05);
       headGroup.add(neck);
 
-      // Subtle ear pods
-      const earGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.16, 24);
+      const shoulders = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 1.25, 0.65, 12), outfitMat);
+      shoulders.scale.set(1.15, 1.0, 0.65);
+      shoulders.position.set(0, -1.78, -0.05);
+      headGroup.add(shoulders);
+
+      // Sculpted Ears
+      const earGeo = new THREE.CylinderGeometry(0.20, 0.16, 0.12, 8);
       earGeo.rotateZ(Math.PI / 2);
-      const leftEar = new THREE.Mesh(earGeo, darkMat);
-      leftEar.position.set(-1.05, 0.05, -0.05);
+      const leftEar = new THREE.Mesh(earGeo, skinMat);
+      leftEar.position.set(-0.96, -0.02, -0.04);
+      leftEar.rotation.y = -0.25;
       const rightEar = leftEar.clone();
-      rightEar.position.x = 1.05;
+      rightEar.position.x = 0.96;
+      rightEar.rotation.y = 0.25;
       headGroup.add(leftEar, rightEar);
 
-      // Visor / Face plate subtle contour
-      const visor = new THREE.Mesh(new THREE.SphereGeometry(0.96, 40, 32), darkMat);
-      visor.scale.set(0.88, 0.72, 0.55);
-      visor.position.set(0, 0.08, 0.58);
-      headGroup.add(visor);
+      // Sculpted defined nose (bridge + tip)
+      const noseBridge = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.48, 4), skinMat);
+      noseBridge.rotation.y = Math.PI / 4;
+      noseBridge.rotation.x = 0.28;
+      noseBridge.scale.set(0.85, 1.0, 0.75);
+      noseBridge.position.set(0, -0.06, 0.96);
+      headGroup.add(noseBridge);
 
-      // Eyes
-      const eyeGeo = new THREE.SphereGeometry(0.16, 24, 24);
-      const leftEye = new THREE.Mesh(eyeGeo, accentMat);
-      leftEye.position.set(-0.36, 0.18, 1.03);
-      leftEye.scale.set(1.15, 1.0, 0.45);
-      const rightEye = leftEye.clone();
-      rightEye.position.x = 0.36;
-      headGroup.add(leftEye, rightEye);
+      const noseTip = new THREE.Mesh(new THREE.DodecahedronGeometry(0.11, 0), skinMat);
+      noseTip.scale.set(1.1, 0.82, 0.95);
+      noseTip.position.set(0, -0.22, 1.04);
+      headGroup.add(noseTip);
 
-      // Eyebrows
-      const browGeo = new THREE.BoxGeometry(0.36, 0.065, 0.08);
-      const leftBrow = new THREE.Mesh(browGeo, accentMat);
-      leftBrow.position.set(-0.37, 0.44, 1.05);
-      const rightBrow = new THREE.Mesh(browGeo, accentMat);
-      rightBrow.position.set(0.37, 0.44, 1.05);
+      // Stylized sculpted hair (defined cartoon silhouette)
+      const hairCap = new THREE.Mesh(new THREE.IcosahedronGeometry(1.10, 2), hairMat);
+      hairCap.scale.set(0.97, 0.86, 1.02);
+      hairCap.position.set(0, 0.48, -0.10);
+      headGroup.add(hairCap);
+
+      const hairQuiff = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.34, 0.72), hairMat);
+      hairQuiff.position.set(0.06, 0.94, 0.36);
+      hairQuiff.rotation.set(0.22, -0.08, -0.08);
+      headGroup.add(hairQuiff);
+
+      const hairLeft = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.85, 0.65), hairMat);
+      hairLeft.position.set(-0.92, 0.38, -0.05);
+      hairLeft.rotation.z = 0.12;
+      const hairRight = hairLeft.clone();
+      hairRight.position.x = 0.92;
+      hairRight.rotation.z = -0.12;
+      headGroup.add(hairLeft, hairRight);
+
+      // Cheek blush planes
+      const blushGeo = new THREE.CircleGeometry(0.18, 12);
+      const leftBlush = new THREE.Mesh(blushGeo, blushMat);
+      leftBlush.position.set(-0.48, -0.22, 0.86);
+      leftBlush.rotation.y = -0.35;
+      const rightBlush = new THREE.Mesh(blushGeo, blushMat);
+      rightBlush.position.set(0.48, -0.22, 0.86);
+      rightBlush.rotation.y = 0.35;
+      headGroup.add(leftBlush, rightBlush);
+
+      // Expressive Human Eyes (sclera + iris + pupil + catchlight + upper/lower lids)
+      const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+      const irisMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.25 });
+      const pupilMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1 });
+      const catchMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+      function buildEye(side) {
+        const g = new THREE.Group();
+        g.position.set(side * 0.36, 0.12, 0.82);
+
+        const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.18, 20, 20), scleraMat);
+        sclera.scale.set(1.08, 0.95, 0.72);
+        g.add(sclera);
+
+        const irisGroup = new THREE.Group();
+        const iris = new THREE.Mesh(new THREE.CircleGeometry(0.095, 20), irisMat);
+        iris.position.z = 0.132;
+        const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.052, 16), pupilMat);
+        pupil.position.z = 0.136;
+        const catchlight = new THREE.Mesh(new THREE.CircleGeometry(0.022, 12), catchMat);
+        catchlight.position.set(0.032, 0.035, 0.14);
+        irisGroup.add(iris, pupil, catchlight);
+        g.add(irisGroup);
+
+        // Defined upper & lower eyelids
+        const upperLid = new THREE.Mesh(
+          new THREE.BoxGeometry(0.42, 0.22, 0.16),
+          lidMat
+        );
+        upperLid.position.set(0, 0.21, 0.08);
+        g.add(upperLid);
+
+        const lowerLid = new THREE.Mesh(
+          new THREE.BoxGeometry(0.40, 0.16, 0.14),
+          lidMat
+        );
+        lowerLid.position.set(0, -0.20, 0.08);
+        g.add(lowerLid);
+
+        return { group: g, irisGroup, upperLid, lowerLid };
+      }
+
+      const leftEye = buildEye(-1);
+      const rightEye = buildEye(1);
+      headGroup.add(leftEye.group, rightEye.group);
+
+      // Defined sculpted eyebrows
+      const browGeo = new THREE.BoxGeometry(0.38, 0.075, 0.10);
+      const leftBrow = new THREE.Mesh(browGeo, hairMat);
+      leftBrow.position.set(-0.37, 0.43, 0.92);
+      const rightBrow = new THREE.Mesh(browGeo, hairMat);
+      rightBrow.position.set(0.37, 0.43, 0.92);
       headGroup.add(leftBrow, rightBrow);
 
-      // Mouth (dynamic tube curve)
-      let mouthMesh = null;
-      function updateMouth(curveVal, openVal) {
-        if (mouthMesh) {
-          headGroup.remove(mouthMesh);
-          mouthMesh.geometry.dispose();
-        }
-        const points = [
-          new THREE.Vector3(-0.30, -0.34, 1.02),
-          new THREE.Vector3(-0.14, -0.34 - curveVal * 0.25, 1.08),
-          new THREE.Vector3(0.0,   -0.34 - curveVal * 0.32 - openVal * 0.12, 1.10),
-          new THREE.Vector3(0.14,  -0.34 - curveVal * 0.25, 1.08),
-          new THREE.Vector3(0.30,  -0.34, 1.02),
-        ];
-        const curve = new THREE.CatmullRomCurve3(points);
-        const radius = 0.032 + openVal * 0.09;
-        const geo = new THREE.TubeGeometry(curve, 20, radius, 12, false);
-        mouthMesh = new THREE.Mesh(geo, accentMat);
-        headGroup.add(mouthMesh);
-      }
-      updateMouth(0.05, 0.02);
+      // Defined cartoon lips + inner cavity
+      const mouthGroup = new THREE.Group();
+      mouthGroup.position.set(0, -0.50, 0.87);
+      headGroup.add(mouthGroup);
 
-      // Smoothly interpolated current values
+      const cavityMat = new THREE.MeshBasicMaterial({ color: 0x3b0f14 });
+      let upperLipMesh = null;
+      let lowerLipMesh = null;
+      let cavityMesh = null;
+
+      function updateMouth(curveVal, openVal) {
+        [upperLipMesh, lowerLipMesh, cavityMesh].forEach((m) => {
+          if (m) {
+            mouthGroup.remove(m);
+            m.geometry.dispose();
+          }
+        });
+
+        const w = 0.28;
+        const upPts = [
+          new THREE.Vector3(-w, 0.0, 0.0),
+          new THREE.Vector3(-w * 0.45, -curveVal * 0.12 + openVal * 0.10, 0.06),
+          new THREE.Vector3(0.0, -curveVal * 0.16 + openVal * 0.14, 0.08),
+          new THREE.Vector3(w * 0.45, -curveVal * 0.12 + openVal * 0.10, 0.06),
+          new THREE.Vector3(w, 0.0, 0.0),
+        ];
+        const lowPts = [
+          new THREE.Vector3(-w, 0.0, 0.0),
+          new THREE.Vector3(-w * 0.45, -curveVal * 0.24 - openVal * 0.22, 0.06),
+          new THREE.Vector3(0.0, -curveVal * 0.30 - openVal * 0.28, 0.08),
+          new THREE.Vector3(w * 0.45, -curveVal * 0.24 - openVal * 0.22, 0.06),
+          new THREE.Vector3(w, 0.0, 0.0),
+        ];
+
+        upperLipMesh = new THREE.Mesh(
+          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(upPts), 16, 0.032, 8, false),
+          lipMat
+        );
+        lowerLipMesh = new THREE.Mesh(
+          new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lowPts), 16, 0.036, 8, false),
+          lipMat
+        );
+        mouthGroup.add(upperLipMesh, lowerLipMesh);
+
+        if (openVal > 0.05) {
+          const cavGeo = new THREE.CircleGeometry(0.11 + openVal * 0.22, 14);
+          cavityMesh = new THREE.Mesh(cavGeo, cavityMat);
+          cavityMesh.scale.set(1.25, 0.55 + openVal * 1.1, 1.0);
+          cavityMesh.position.set(0, -curveVal * 0.16 - openVal * 0.06, 0.04);
+          mouthGroup.add(cavityMesh);
+        }
+      }
+      updateMouth(0.06, 0.02);
+
       const cur = { ...EXPRESSIONS.neutral };
-      const targetColor = new THREE.Color(faceState.accentHex);
+      const targetRim = new THREE.Color(faceState.bgPrimary);
       let blinkTimer = 0;
       let lastMouthHash = "";
 
-      function onResize() {
+      window.addEventListener("resize", () => {
         const w = container.clientWidth;
         const h = Math.max(1, container.clientHeight);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
-      }
-      window.addEventListener("resize", onResize);
+      });
 
       const clock = new THREE.Clock();
       function animate() {
@@ -593,30 +758,41 @@
         const t = clock.elapsedTime;
 
         const target = EXPRESSIONS[faceState.expression] || EXPRESSIONS.neutral;
-        const speed = 5.5 * dt;
-        cur.browY += (target.browY - cur.browY) * speed;
-        cur.browTilt += (target.browTilt - cur.browTilt) * speed;
-        cur.eyeScaleY += (target.eyeScaleY - cur.eyeScaleY) * speed;
-        cur.mouthCurve += (target.mouthCurve - cur.mouthCurve) * speed;
-        cur.mouthOpen += (target.mouthOpen - cur.mouthOpen) * speed;
+        const speed = 6.0 * dt;
+        Object.keys(cur).forEach((k) => {
+          cur[k] += (target[k] - cur[k]) * speed;
+        });
 
-        // Color transition
-        targetColor.set(faceState.accentHex);
-        accentMat.color.lerp(targetColor, speed);
-        accentMat.emissive.lerp(targetColor, speed);
-        rimLight.color.lerp(targetColor, speed);
+        targetRim.set(faceState.bgPrimary);
+        rimLight.color.lerp(targetRim, speed);
+        rimLightRight.color.lerp(targetRim, speed);
+        blushMat.opacity = cur.blush;
 
         // Blinking
         blinkTimer += dt;
-        let blinkFactor = 1.0;
-        if (blinkTimer > 3.6) {
-          const b = blinkTimer - 3.6;
-          if (b < 0.14) blinkFactor = Math.max(0.08, Math.abs(Math.cos((b / 0.14) * Math.PI)));
+        let blinkDrop = 0;
+        if (blinkTimer > 3.5) {
+          const b = blinkTimer - 3.5;
+          if (b < 0.14) blinkDrop = Math.sin((b / 0.14) * Math.PI) * 0.22;
           else blinkTimer = 0;
         }
 
-        leftEye.scale.y = cur.eyeScaleY * blinkFactor;
-        rightEye.scale.y = cur.eyeScaleY * blinkFactor;
+        // Apply eyelids & eyebrows
+        const upY = 0.22 - cur.upperLid * 0.16 - blinkDrop;
+        const lowY = -0.21 + cur.lowerLid * 0.14;
+        leftEye.upperLid.position.y = upY;
+        rightEye.upperLid.position.y = upY;
+        leftEye.lowerLid.position.y = lowY;
+        rightEye.lowerLid.position.y = lowY;
+
+        leftEye.upperLid.rotation.z = cur.browTilt * 0.35;
+        rightEye.upperLid.rotation.z = -cur.browTilt * 0.35;
+
+        // Eye tracking
+        const lookX = faceState.mouseX * 0.05;
+        const lookY = faceState.mouseY * 0.04;
+        leftEye.irisGroup.position.set(lookX, lookY, 0);
+        rightEye.irisGroup.position.set(lookX, lookY, 0);
 
         leftBrow.position.y = cur.browY;
         rightBrow.position.y = cur.browY;
@@ -629,29 +805,29 @@
           lastMouthHash = mouthHash;
         }
 
-        // Idle breathing + mouse look + gesture
+        // Gestures + idle breathing
         let gX = 0, gY = 0, gZ = 0;
         if (faceState.gestureTimer > 0) {
           faceState.gestureTimer = Math.max(0, faceState.gestureTimer - dt);
           const p = faceState.gestureTimer * Math.PI * 2;
-          if (faceState.gesture === "happy_nod") gX = Math.sin(p * 2) * 0.18;
-          else if (faceState.gesture === "raised_hand") gY = Math.sin(p * 2.5) * 0.22;
-          else if (faceState.gesture === "slight_bow") gX = 0.22 * Math.sin(p * 0.5);
-          else if (faceState.gesture === "gentle_head_tilt") gZ = 0.18;
+          if (faceState.gesture === "happy_nod") gX = Math.sin(p * 2) * 0.16;
+          else if (faceState.gesture === "raised_hand") gY = Math.sin(p * 2.5) * 0.20;
+          else if (faceState.gesture === "slight_bow") gX = 0.20 * Math.sin(p * 0.5);
+          else if (faceState.gesture === "gentle_head_tilt") gZ = 0.16;
           else if (faceState.gesture === "alert_posture") gX = -0.10;
         }
 
-        headGroup.position.y = Math.sin(t * 1.6) * 0.05;
-        headGroup.rotation.y += (faceState.mouseX * 0.28 + gY - headGroup.rotation.y) * 4 * dt;
-        headGroup.rotation.x += (-faceState.mouseY * 0.18 + gX - headGroup.rotation.x) * 4 * dt;
-        headGroup.rotation.z += (gZ - headGroup.rotation.z) * 4 * dt;
+        headGroup.position.y = Math.sin(t * 1.6) * 0.04;
+        headGroup.rotation.y += (faceState.mouseX * 0.24 + gY - headGroup.rotation.y) * 4.5 * dt;
+        headGroup.rotation.x += (-faceState.mouseY * 0.15 + gX - headGroup.rotation.x) * 4.5 * dt;
+        headGroup.rotation.z += (gZ - headGroup.rotation.z) * 4.5 * dt;
 
         renderer.render(scene, camera);
       }
       animate();
     }
 
-    // Pure-Canvas offline fallback if CDN is unreachable
+    // Defined cartoon human Canvas fallback (totally offline)
     function initCanvasFallbackFace() {
       const canvas = document.createElement("canvas");
       canvas.style.width = "100%";
@@ -664,49 +840,81 @@
         canvas.height = Math.max(1, container.clientHeight);
         const cx = canvas.width / 2;
         const cy = canvas.height / 2;
-        const r = Math.min(cx, cy) * 0.48;
+        const r = Math.min(cx, cy) * 0.45;
         const expr = EXPRESSIONS[faceState.expression] || EXPRESSIONS.neutral;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Head sphere shading
-        const grad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
-        grad.addColorStop(0, "#f1f5f9");
-        grad.addColorStop(0.75, "#94a3b8");
-        grad.addColorStop(1, "#334155");
-        ctx.fillStyle = grad;
+        // Hair back
+        ctx.fillStyle = "#2b201d";
         ctx.beginPath();
-        ctx.ellipse(cx, cy, r * 0.85, r, 0, 0, Math.PI * 2);
+        ctx.ellipse(cx, cy - r * 0.18, r * 0.92, r * 0.98, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Visor
-        ctx.fillStyle = "#0f172a";
+        // Sculpted pink-peach face
+        const grad = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+        grad.addColorStop(0, "#fbd0be");
+        grad.addColorStop(0.55, "#f4baa4");
+        grad.addColorStop(1, "#d99279");
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.ellipse(cx, cy - r * 0.04, r * 0.65, r * 0.45, 0, 0, Math.PI * 2);
+        ctx.moveTo(cx - r * 0.78, cy - r * 0.15);
+        ctx.lineTo(cx - r * 0.65, cy + r * 0.52);
+        ctx.lineTo(cx, cy + r * 0.95);
+        ctx.lineTo(cx + r * 0.65, cy + r * 0.52);
+        ctx.lineTo(cx + r * 0.78, cy - r * 0.15);
+        ctx.quadraticCurveTo(cx, cy - r * 1.05, cx - r * 0.78, cy - r * 0.15);
         ctx.fill();
 
         // Eyes
-        ctx.fillStyle = faceState.accentHex;
         [-1, 1].forEach((side) => {
+          const ex = cx + side * r * 0.30;
+          const ey = cy - r * 0.06;
+          ctx.fillStyle = "#ffffff";
           ctx.beginPath();
-          ctx.ellipse(cx + side * r * 0.28, cy - r * 0.06, r * 0.11, r * 0.09 * expr.eyeScaleY, 0, 0, Math.PI * 2);
+          ctx.ellipse(ex, ey, r * 0.13, r * 0.11, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#2563eb";
+          ctx.beginPath();
+          ctx.arc(ex, ey, r * 0.065, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#0f172a";
+          ctx.beginPath();
+          ctx.arc(ex, ey, r * 0.036, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(ex + r * 0.02, ey - r * 0.025, r * 0.018, 0, Math.PI * 2);
           ctx.fill();
 
           // Eyebrow
           ctx.save();
-          ctx.translate(cx + side * r * 0.28, cy - r * (0.05 + expr.browY * 0.55));
+          ctx.fillStyle = "#2b201d";
+          ctx.translate(ex, ey - r * (0.14 + (expr.browY - 0.35) * 0.5));
           ctx.rotate(side * -expr.browTilt);
-          ctx.fillRect(-r * 0.14, -r * 0.025, r * 0.28, r * 0.05);
+          ctx.fillRect(-r * 0.16, -r * 0.03, r * 0.32, r * 0.06);
           ctx.restore();
         });
 
-        // Mouth
-        ctx.strokeStyle = faceState.accentHex;
-        ctx.lineWidth = Math.max(4, r * 0.045);
+        // Nose
+        ctx.strokeStyle = "#c9826a";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 0.04);
+        ctx.lineTo(cx - r * 0.05, cy + r * 0.20);
+        ctx.lineTo(cx + r * 0.06, cy + r * 0.22);
+        ctx.stroke();
+
+        // Lips
+        ctx.strokeStyle = "#d6746c";
+        ctx.lineWidth = 7;
         ctx.lineCap = "round";
         ctx.beginPath();
-        ctx.moveTo(cx - r * 0.24, cy + r * 0.24);
-        ctx.quadraticCurveTo(cx, cy + r * (0.24 + expr.mouthCurve * 0.45), cx + r * 0.24, cy + r * 0.24);
+        ctx.moveTo(cx - r * 0.22, cy + r * 0.46);
+        ctx.quadraticCurveTo(cx, cy + r * (0.46 + expr.mouthCurve * 0.45), cx + r * 0.22, cy + r * 0.46);
         ctx.stroke();
 
         requestAnimationFrame(draw);
@@ -715,7 +923,7 @@
     }
 
     if (typeof window.THREE !== "undefined") {
-      initThreeFace();
+      initThreeCartoonFace();
     } else {
       initCanvasFallbackFace();
     }
@@ -767,8 +975,52 @@
       };
     }
 
+    // Local preview fallback ONLY if someone opened index.html via file://
+    function localPreviewTurn({ text, event }) {
+      const lower = (text || "").toLowerCase();
+      let emotion = "calm", expr = "neutral", bg1 = "#14b8a6", bg2 = "#0f2937", acc = "#5eead4", resp = "Sono pronto ad aiutarti.";
+      if (event === "user_hostility" || /stupido|inutile|arrabbi|odio/.test(lower)) {
+        emotion = "anger"; expr = "angry"; bg1 = "#dc2626"; bg2 = "#5a0b0b"; acc = "#f87171";
+        resp = "Preferisco mantenere un tono rispettoso. Parliamone con calma.";
+      } else if (event === "safety_alert" || /fumo|fuoco|pericolo/.test(lower)) {
+        emotion = "fear"; expr = "fearful"; bg1 = "#ef4444"; bg2 = "#450a0a"; acc = "#fca5a5";
+        resp = "Attenzione: seguiamo subito le procedure di sicurezza!";
+      } else if (event === "user_distress" || /annullat|pioggia|triste|stress/.test(lower)) {
+        emotion = "sadness"; expr = "sad"; bg1 = "#38bdf8"; bg2 = "#0c2d48"; acc = "#93c5fd";
+        resp = `Che peccato per '${text || "questo"}', mi dispiace davvero.`;
+      } else if (event === "user_greeting" || event === "user_praise" || event === "task_success" || /ciao|bravo|grazie/.test(lower)) {
+        emotion = "joy"; expr = "happy"; bg1 = "#f59e0b"; bg2 = "#5c3406"; acc = "#fde047";
+        resp = "Che bello! Sono davvero felice di sentirti.";
+      }
+      return {
+        previous_emotion: faceState.emotion,
+        emotion,
+        intensity: emotion === "calm" ? "low" : "high",
+        visuals: { bg_primary: bg1, bg_secondary: bg2, accent: acc, expression: expr },
+        behavior: { name: "preview_mode", gesture: "happy_nod" },
+        verbal_response: resp,
+        llm_source: "file-preview",
+        reasoning_trace: ["Modalità file://: avvia 'python web_app.py' per il Knowledge Graph e gli LLM completi."],
+      };
+    }
+
+    function setBusy(busy) {
+      document.getElementById("send-btn").disabled = busy;
+      document.querySelectorAll(".chip").forEach((c) => (c.disabled = busy));
+    }
+
     async function sendInteraction({ text = "", event = "", context = "auto" }) {
       const statusEl = document.getElementById("status-msg");
+      if (IS_FILE_MODE) {
+        const data = localPreviewTurn({ text, event });
+        applyVisuals(data);
+        document.getElementById("robot-response").textContent = data.verbal_response;
+        document.getElementById("trace-list").innerHTML = `<li>${data.reasoning_trace[0]}</li>`;
+        statusEl.textContent = `Preview locale (${data.emotion})`;
+        return;
+      }
+
+      setBusy(true);
       statusEl.textContent = "Elaborazione...";
       try {
         const res = await fetch("/api/interact", {
@@ -796,9 +1048,16 @@
           li.textContent = step;
           traceList.appendChild(li);
         });
+        if (data.llm_error) {
+          const li = document.createElement("li");
+          li.textContent = `Nota LLM: ${data.llm_error} -> usato fallback.`;
+          traceList.appendChild(li);
+        }
         statusEl.textContent = `Aggiornato (${data.previous_emotion} -> ${data.emotion})`;
       } catch (err) {
-        statusEl.textContent = "Errore di connessione al server locale.";
+        statusEl.textContent = "Server non raggiungibile: avvia 'python web_app.py'.";
+      } finally {
+        setBusy(false);
       }
     }
 
@@ -826,6 +1085,14 @@
     });
 
     document.getElementById("reset-btn").addEventListener("click", async () => {
+      if (IS_FILE_MODE) {
+        applyVisuals({
+          emotion: "calm",
+          intensity: "low",
+          visuals: { bg_primary: "#14b8a6", bg_secondary: "#0f2937", accent: "#5eead4", expression: "neutral" },
+        });
+        return;
+      }
       const res = await fetch("/api/reset", { method: "POST" });
       const data = await res.json();
       applyVisuals(data);
@@ -834,8 +1101,9 @@
       document.getElementById("status-msg").textContent = "Reset completato";
     });
 
-    // Initial load
-    fetch("/api/state").then((r) => r.json()).then(applyVisuals);
+    if (!IS_FILE_MODE) {
+      fetch("/api/state").then((r) => r.json()).then(applyVisuals).catch(() => {});
+    }
   </script>
 </body>
 </html>
