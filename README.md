@@ -13,10 +13,10 @@ The system separates **symbolic decision-making** (Ontology + Knowledge Graph) f
 2. **Knowledge Graph Reasoning (`src/knowledge_graph.py`)**  
    A directed typed property graph (`networkx.MultiDiGraph`, 30 nodes, 69 edges) links `PerceivedEvent -> Emotion -> RobotBehavior` and `Event -> Behavior`, tracks `RobotInternalState`, filters contraindicated behaviors (`contraindicated_in`), boosts context-suitable candidates (`suitable_for`), and outputs a deterministic *why/why-not* reasoning trace.
 3. **Grounded Verbal Generation (`src/llm_client.py`, `src/robot_agent.py`)**  
-   The LLM receives the Knowledge Graph decision and reasoning trace solely to verbalize an empathetic, context-consistent reply without altering state transitions or behavior selection.
+   The LLM receives the Knowledge Graph decision and reasoning trace solely to verbalize an empathetic, context-consistent reply without altering state transitions or behavior selection. When using Groq, deprecated or decommissioned models are automatically detected and replaced via live `/models` discovery without falling back.
 4. **OWL/RDF Turtle Serialization (`src/rdf_exporter.py`)**  
    Exports the domain ontology (TBox), graph relations, and dynamic episodic memory (`ABox`, `InteractionEpisode`) in W3C Turtle format (`/api/export-ttl`).
-5. **3D Expressive Humanoid Simulator (`web_app.py`, `web/index.html`, `web/avatar.glb`)**  
+5. **3D Expressive Humanoid Simulator (`web_app.py`, `web/index.html`, `public/avatar.glb`)**  
    Real-time Three.js interface mapping the robot's internal emotional state and intensity onto 52 ARKit facial blendshapes, eye gaze/blinking, head/neck gestures, lip-sync visemes, and a full 4-stage system telemetry console.
 
 ## Repository Layout
@@ -104,9 +104,15 @@ python -m unittest discover -s tests -v
 
 ## Quantitative Evaluation (`python benchmark.py`)
 
-Measured across 20 graph scenarios (10 safe, 10 constrained) and 16 IT/EN free-text cases:
+Measured across 20 graph scenarios (10 safe, 10 constrained) and 16 IT/EN free-text cases, alongside 25 unit tests (`python -m unittest discover -s tests -v`):
 
 - **Coherence Frequency:** `100.0%` (`20/20`)
 - **Contraindicated Behavior Exclusion Rate:** `100.0%`
-- **Graph Query Latency:** `mean = 0.033 ms`, `p95 = 0.092 ms`, `max = 0.092 ms`
+- **Graph Query Latency:** `mean = 0.036 ms`, `p95 = 0.106 ms`, `max = 0.106 ms`
 - **Free-Text Extraction Accuracy (fallback):** `100.0%` (`16/16`)
+- **Automated Unit Tests:** `25/25 passed`
+
+## Documentation
+
+- [`docs/project_proposal.pdf`](docs/project_proposal.pdf) — Title & Abstract proposal
+- [`docs/technical_documentation.pdf`](docs/technical_documentation.pdf) — M.Sc. Technical Report (Ontology, KG Scoring, 3D ARKit Engine, Deployment & Evaluation)
